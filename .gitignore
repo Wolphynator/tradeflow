@@ -1,0 +1,21 @@
+# Old duplicates and backups
+Archive duplicate App Invoice_2026-06-25/
+Test_Backup/
+Website/
+
+# Obsidian docs (not needed in deployment)
+Obsidian Vault/
+
+# Screenshots
+*.png
+
+# Claude Code settings
+.claude/
+.agents/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Node (if ever added)
+node_modules/
