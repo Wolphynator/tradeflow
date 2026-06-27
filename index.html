@@ -845,21 +845,16 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
 
 <div class="manage-modal" id="schedule-modal" onclick="if(event.target===this)closeScheduleSheet()">
   <div class="manage-sheet">
-    <div class="manage-sheet-title" data-en-text="New Schedule Item">New Schedule Item</div>
-    <div class="manage-sheet-sub" data-en-text="Add a job, site visit, reminder, or walkthrough.">Add a job, site visit, reminder, or walkthrough.</div>
-    <input class="expense-input" id="schedule-title-input" placeholder="Job title or reminder">
-    <input class="expense-input" id="schedule-client-input" placeholder="Client or address">
+    <div class="manage-sheet-title" id="schedule-modal-title">New Schedule Item</div>
+    <div class="manage-sheet-sub">Add a job, site visit, reminder, or walkthrough.</div>
+    <input class="expense-input" id="schedule-title-input" placeholder="Job title or reminder" maxlength="120">
+    <input class="expense-input" id="schedule-client-input" placeholder="Client or address" maxlength="120">
     <div class="frow2" style="margin-bottom:10px">
       <input class="expense-input" id="schedule-date-input" type="date">
       <input class="expense-input" id="schedule-time-input" type="time">
     </div>
     <div class="frow2" style="margin-bottom:10px">
-      <select class="expense-input" id="schedule-type-input" aria-label="Schedule type">
-        <option value="Job">Job</option>
-        <option value="Site Visit">Site Visit</option>
-        <option value="Reminder">Reminder</option>
-        <option value="Lead Follow-up">Lead Follow-up</option>
-      </select>
+      <input class="expense-input" id="schedule-type-input" placeholder="Type (e.g. Site Visit, Cleaning)" maxlength="60">
       <select class="expense-input" id="schedule-status-input" aria-label="Schedule status">
         <option value="Booked">Booked</option>
         <option value="In Progress">In Progress</option>
@@ -869,8 +864,20 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
     </div>
     <textarea class="expense-input" id="schedule-note-input" placeholder="Notes" style="min-height:70px;resize:none"></textarea>
     <div class="manage-sheet-actions">
-      <button class="cancel" onclick="closeScheduleSheet()" data-en-text="Cancel">Cancel</button>
-      <button class="save" onclick="saveScheduleItem()" data-en-text="Save">Save</button>
+      <button class="cancel" onclick="closeScheduleSheet()">Cancel</button>
+      <button class="save" onclick="saveScheduleItem()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCHEDULE DELETE CONFIRM MODAL -->
+<div class="manage-modal" id="schedule-delete-modal" onclick="if(event.target===this)closeScheduleDeleteModal()">
+  <div class="manage-sheet">
+    <div class="manage-sheet-title" style="color:var(--danger)">Delete Scheduled Item</div>
+    <div class="manage-sheet-sub">Are you sure you want to delete this scheduled item? This cannot be undone.</div>
+    <div class="manage-sheet-actions">
+      <button class="cancel" onclick="closeScheduleDeleteModal()">Cancel</button>
+      <button class="save" style="background:var(--danger)" onclick="deleteScheduleItem()">Delete</button>
     </div>
   </div>
 </div>
@@ -3066,7 +3073,12 @@ function openScheduleDetail(index){
     const buttons=[];
     if(item.sourceEstimateId) buttons.push('<button class="btn-s" onclick="openLinkedEstimateFromSchedule()">View Estimate</button>');
     if(item.sourceInvoiceId) buttons.push('<button class="btn-p" onclick="openLinkedInvoiceFromSchedule()">View Invoice</button>');
-    actions.innerHTML=buttons.join('')||"<button class=\"btn-s\" onclick=\"goTo('screen-schedule')\">Back to Schedule</button>";
+    actions.innerHTML=buttons.join('');
+    actions.innerHTML+='<div style="display:flex;gap:8px;margin-top:10px;width:100%">'
+      +'<button class="btn-s" style="flex:1" onclick="editScheduleItem()">Edit</button>'
+      +(item.status!=='Cancelled'?'<button class="btn-s" style="flex:1;color:var(--warning);border-color:var(--warning)" onclick="cancelScheduleItem()">Cancel</button>':'')
+      +'<button class="btn-s" style="flex:1;color:var(--danger);border-color:var(--danger)" onclick="confirmDeleteScheduleItem()">Delete</button>'
+      +'</div>';
   }
   goTo('screen-schedule-detail');
 }
@@ -3085,24 +3097,65 @@ function openLinkedInvoiceFromSchedule(){
   showManageToast('Linked invoice not found');
 }
 
+function editScheduleItem(){
+  const item=scheduleItems[currentScheduleIndex];
+  if(!item) return;
+  closeScheduleSheet();
+  openScheduleSheet(item, currentScheduleIndex);
+}
+
+function cancelScheduleItem(){
+  const item=scheduleItems[currentScheduleIndex];
+  if(!item) return;
+  item.status='Cancelled';
+  persistSchedule();
+  renderSchedule();
+  openScheduleDetail(currentScheduleIndex);
+  showManageToast('Item marked as cancelled');
+}
+
+function confirmDeleteScheduleItem(){
+  document.getElementById('schedule-delete-modal').classList.add('open');
+}
+
+function closeScheduleDeleteModal(){
+  document.getElementById('schedule-delete-modal').classList.remove('open');
+}
+
+function deleteScheduleItem(){
+  closeScheduleDeleteModal();
+  if(currentScheduleIndex<0||!scheduleItems[currentScheduleIndex]) return;
+  scheduleItems.splice(currentScheduleIndex,1);
+  currentScheduleIndex=-1;
+  persistSchedule();
+  renderSchedule();
+  goBack();
+  showManageToast('Schedule item deleted');
+}
+
 function selectScheduleDate(date){
   selectedScheduleDate=date;
   renderSchedule();
 }
 
-function openScheduleSheet(prefill){
+function openScheduleSheet(prefill, editIndex){
   const data=prefill||{};
+  const today=new Date().toISOString().split('T')[0];
   document.getElementById('schedule-title-input').value=data.title||'';
   document.getElementById('schedule-client-input').value=data.client||'';
-  document.getElementById('schedule-date-input').value=data.date||selectedScheduleDate;
+  const dateInput=document.getElementById('schedule-date-input');
+  dateInput.min=today;
+  dateInput.value=data.date||selectedScheduleDate||today;
   document.getElementById('schedule-time-input').value=data.time||'09:00';
-  document.getElementById('schedule-type-input').value=data.type||'Job';
+  document.getElementById('schedule-type-input').value=data.type||'';
   document.getElementById('schedule-status-input').value=data.status||'Booked';
   document.getElementById('schedule-note-input').value=data.note||'';
   const modal=document.getElementById('schedule-modal');
   modal.dataset.sourceEstimateId=data.sourceEstimateId||'';
   modal.dataset.sourceInvoiceId=data.sourceInvoiceId||'';
-  document.getElementById('schedule-modal').classList.add('open');
+  modal.dataset.editIndex=editIndex!=null?editIndex:'';
+  document.getElementById('schedule-modal-title').textContent=editIndex!=null?'Edit Schedule Item':'New Schedule Item';
+  modal.classList.add('open');
   setTimeout(()=>document.getElementById('schedule-title-input').focus(),60);
 }
 
@@ -3115,31 +3168,44 @@ function saveScheduleItem(){
   const client=cleanInputValue('schedule-client-input','name');
   const date=document.getElementById('schedule-date-input').value||selectedScheduleDate;
   const time=document.getElementById('schedule-time-input').value||'09:00';
-  if(!title){showManageToast('Title required');return}
+  if(!title){showManageToast('Title required');return;}
+  const today=new Date().toISOString().split('T')[0];
+  if(date<today){showManageToast('Please select a future date and time.');return;}
+  if(date===today){
+    const now=new Date();
+    const[hh,mm]=time.split(':').map(Number);
+    const pickedMins=hh*60+mm;
+    const nowMins=now.getHours()*60+now.getMinutes();
+    if(pickedMins<=nowMins){showManageToast('Please select a future date and time.');return;}
+  }
   const modal=document.getElementById('schedule-modal');
-  const item={
-    id:getNextScheduleId(),
-    date,time,title,
-    type:document.getElementById('schedule-type-input').value,
+  const editIndex=modal.dataset.editIndex!==''?Number(modal.dataset.editIndex):null;
+  const type=cleanInputValue('schedule-type-input','short')||'Job';
+  const base={
+    date,time,title,type,
     client:client||'No client added',
     status:document.getElementById('schedule-status-input').value,
     note:cleanInputValue('schedule-note-input','notes'),
     sourceEstimateId:modal?.dataset.sourceEstimateId||'',
     sourceInvoiceId:modal?.dataset.sourceInvoiceId||''
   };
-  scheduleItems.push({
-    ...item
-  });
-  if(item.sourceEstimateId){
-    const est=estimates.find(e=>e.id===item.sourceEstimateId);
-    if(est) est.scheduleItemId=item.id;
-    persistEstimates();
+  if(editIndex!=null&&scheduleItems[editIndex]){
+    scheduleItems[editIndex]={...scheduleItems[editIndex],...base};
+    showManageToast('Schedule item updated');
+  }else{
+    const item={id:getNextScheduleId(),...base};
+    scheduleItems.push(item);
+    if(item.sourceEstimateId){
+      const est=estimates.find(e=>e.id===item.sourceEstimateId);
+      if(est) est.scheduleItemId=item.id;
+      persistEstimates();
+    }
+    showManageToast('Schedule item added');
   }
   selectedScheduleDate=date;
   closeScheduleSheet();
   renderSchedule();
   persistSchedule();
-  showManageToast('Schedule item added');
 }
 
 function manageAction(i){
