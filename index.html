@@ -566,6 +566,28 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
 .vw-sig-preview-wrap{background:white;border:1px solid var(--border);border-radius:10px;padding:10px;margin:10px 0}
 .vw-sig-preview{max-width:100%;height:auto;display:block}
 .vw-signed-notice{font-size:12.5px;color:var(--success);font-weight:500}
+.vw-resp-btns{display:flex;gap:10px;margin-top:14px}
+.vw-resp-btns button{flex:1;padding:13px 6px;border-radius:10px;font-size:14px;font-weight:700;border:none;cursor:pointer;transition:opacity .15s}
+.vw-resp-btns button:active{opacity:.7}
+.vw-resp-accept{background:var(--brand);color:#fff}
+.vw-resp-decline{background:#fee2e2;color:#dc2626}
+.vw-resp-query{background:#fef3c7;color:#b45309}
+.vw-resp-btns button.vw-resp-selected{box-shadow:inset 0 0 0 3px rgba(0,0,0,.22)}
+.vw-sub-panel{display:none;margin-top:12px}
+.vw-sub-panel.open{display:block}
+.vw-decline-reasons{display:grid;gap:8px;margin:10px 0}
+.vw-decline-opt{width:100%;padding:11px 14px;border-radius:8px;border:2px solid var(--border);background:var(--bg-card,#fff);font-size:14px;cursor:pointer;text-align:left;color:var(--text);font-weight:500;transition:all .15s}
+.vw-decline-opt.selected{border-color:#dc2626;background:#fee2e2;color:#dc2626;font-weight:700}
+.vw-decline-comment,.vw-query-msg{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;resize:none;margin-top:8px;font-family:inherit;color:var(--text);background:var(--bg-card,#fff);box-sizing:border-box}
+.vw-action-submit{width:100%;padding:13px;border-radius:10px;border:none;font-size:15px;font-weight:700;margin-top:12px;cursor:pointer}
+.vw-action-submit.decline{background:#dc2626;color:#fff}
+.vw-action-submit.query{background:#d97706;color:#fff}
+.vw-done-card{border-radius:14px;padding:20px 16px;text-align:center;margin-top:14px}
+.vw-done-card.declined{background:#fee2e2;border:1px solid rgba(220,38,38,.2)}
+.vw-done-card.queried{background:#fef3c7;border:1px solid rgba(217,119,6,.2)}
+.vw-done-icon{font-size:32px;line-height:1;margin-bottom:8px}
+.vw-done-title{font-size:16px;font-weight:700;margin-bottom:3px}
+.vw-done-notice{font-size:12.5px;font-weight:500;margin-top:4px}
 
 /* ── Client Management ── */
 .cl-filter-bar{display:flex;gap:8px;margin-bottom:12px;overflow-x:auto;scrollbar-width:none}
@@ -7542,7 +7564,9 @@ function renderActivityItem(entry){
     payment:{dot:'g',ic:'£'},
     archived:{dot:'r',ic:'↓'},
     restored:{dot:'g',ic:'↑'},
-    overdue:{dot:'r',ic:'!'}
+    overdue:{dot:'r',ic:'!'},
+    client_declined:{dot:'r',ic:'✗'},
+    client_query:{dot:'b',ic:'?'}
   };
   const action=entry.action||'';
   const cfg=map[action]||{dot:'b',ic:'•'};
@@ -7570,6 +7594,12 @@ function renderActivityItem(entry){
   }else if(action==='payment'){
     label='Payment recorded';
     sub=(meta.amount||'')+(meta.doc_number?' on '+meta.doc_number:'');
+  }else if(action==='client_declined'){
+    label='Estimate declined by client';
+    sub=(meta.doc_number||entityType)+(meta.reason?' — '+meta.reason:'');
+  }else if(action==='client_query'){
+    label='Query from client';
+    sub=(meta.doc_number||entityType)+(meta.message?' — '+meta.message.slice(0,60):'');
   }else if(action==='archived'){
     label=(meta.name||entityType)+' archived';
     sub=entityType;
@@ -7899,24 +7929,54 @@ function renderClientViewer(doc){
         ${(()=>{const cos=doc.changeOrders||[];if(!cos.length)return'';return cos.map(co=>{const lines=(co.lines||[]).map(l=>'<div class="inv-line-item"><div class="inv-li-name">'+esc(l.name||'')+'</div>'+(l.description?'<div class="inv-li-desc">'+esc(l.description)+'</div>':'')+'<div class="inv-li-total">'+money((l.qty||0)*(l.unitPrice||0))+'</div></div>').join('');return'<div style="border-top:2px dashed var(--border);margin-top:4px"><div style="padding:10px 16px 4px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Change Order '+co.id+' &nbsp;·&nbsp; '+esc(co.date||'')+'</div>'+lines+(co.notes?'<div style="font-size:12px;color:var(--muted);margin:4px 16px 8px;padding:8px;background:var(--bg-alt,#f9fafb);border-radius:6px">'+esc(co.notes)+'</div>':'')+'<div class="inv-totals"><div class="inv-tot-row grand"><span>CO Total</span><span>'+money(co.total||0)+'</span></div></div></div>';}).join('');})()}
       </div>
       <div id="vw-action-area">
-        <div class="vw-agreement">
-          <div class="vw-agreement-title">Acceptance &amp; Authorisation</div>
-          <div class="vw-agreement-text">${agreementText}</div>
+        <div class="vw-resp-btns">
+          ${isInv
+            ? `<button class="vw-resp-accept" onclick="vwShowSection('accept')">&#10003; Sign &amp; Accept</button><button class="vw-resp-query" onclick="vwShowSection('query')">? Query</button>`
+            : `<button class="vw-resp-accept" onclick="vwShowSection('accept')">&#10003; Accept</button><button class="vw-resp-decline" onclick="vwShowSection('decline')">&#10007; Decline</button><button class="vw-resp-query" onclick="vwShowSection('query')">? Query</button>`
+          }
         </div>
-        <div class="vw-sig-wrap">
-          <div class="vw-sig-label">Client Signature</div>
-          <canvas id="vw-sig-canvas" class="vw-sig-canvas"></canvas>
-          <div class="vw-sig-actions">
-            <button class="vw-sig-clear" onclick="clearSignature()">Clear</button>
-            <button class="vw-sig-submit" onclick="submitSignature()">Sign &amp; Accept</button>
+        <div id="vw-accept-panel" class="vw-sub-panel">
+          <div class="vw-agreement">
+            <div class="vw-agreement-title">Acceptance &amp; Authorisation</div>
+            <div class="vw-agreement-text">${agreementText}</div>
           </div>
+          <div class="vw-sig-wrap">
+            <div class="vw-sig-label">Client Signature</div>
+            <canvas id="vw-sig-canvas" class="vw-sig-canvas"></canvas>
+            <div class="vw-sig-actions">
+              <button class="vw-sig-clear" onclick="clearSignature()">Clear</button>
+              <button class="vw-sig-submit" onclick="submitSignature()">Sign &amp; Accept</button>
+            </div>
+          </div>
+        </div>
+        ${isInv ? '' : `<div id="vw-decline-panel" class="vw-sub-panel">
+          <div class="vw-agreement">
+            <div class="vw-agreement-title">Reason for Declining</div>
+            <div class="vw-agreement-text">Please let us know why so we can improve.</div>
+          </div>
+          <div class="vw-decline-reasons">
+            <button class="vw-decline-opt" data-reason="Price is too high" onclick="vwSelectReason(this)">Price is too high</button>
+            <button class="vw-decline-opt" data-reason="Timeline doesn't work" onclick="vwSelectReason(this)">Timeline doesn't work</button>
+            <button class="vw-decline-opt" data-reason="Going with another contractor" onclick="vwSelectReason(this)">Going with another contractor</button>
+            <button class="vw-decline-opt" data-reason="Scope needs adjusting" onclick="vwSelectReason(this)">Scope needs adjusting</button>
+            <button class="vw-decline-opt" data-reason="Other" onclick="vwSelectReason(this)">Other</button>
+          </div>
+          <textarea class="vw-decline-comment" id="vw-decline-comment" rows="3" placeholder="Add a note (optional)..."></textarea>
+          <button class="vw-action-submit decline" onclick="submitDecline()">Decline Estimate</button>
+        </div>`}
+        <div id="vw-query-panel" class="vw-sub-panel">
+          <div class="vw-agreement">
+            <div class="vw-agreement-title">Send a Query</div>
+            <div class="vw-agreement-text">What would you like to ask about this ${isInv?'invoice':'estimate'}?</div>
+          </div>
+          <textarea class="vw-query-msg" id="vw-query-msg" rows="4" placeholder="Type your question here..."></textarea>
+          <button class="vw-action-submit query" onclick="submitQuery()">Send Query</button>
         </div>
       </div>
     </div>
       <button class="vw-pdf-btn" id="vw-pdf-btn" onclick="downloadPDF('viewer')">&#128196; Download PDF</button>
     <div class="vw-footer">Sent via TradeFlow &nbsp;&middot;&nbsp; Powered by Claude AI</div>
   `;
-  setTimeout(()=>initSignaturePad(),80);
 }
 
 function renderViewerInvoiceLines(doc){
@@ -8046,6 +8106,72 @@ function clearSignature(){
   _sigCtx.clearRect(0,0,_sigCanvas.width,_sigCanvas.height);
   drawSigPlaceholder();
   if(_sigCanvas.classList) _sigCanvas.classList.remove('error');
+}
+
+let _vwDeclineReason='';
+
+function vwShowSection(type){
+  ['accept','decline','query'].forEach(p=>{
+    const el=document.getElementById('vw-'+p+'-panel');
+    if(el) el.classList.toggle('open',p===type);
+  });
+  document.querySelectorAll('.vw-resp-btns button').forEach(b=>b.classList.remove('vw-resp-selected'));
+  const sel=document.querySelector('.vw-resp-'+type);
+  if(sel) sel.classList.add('vw-resp-selected');
+  if(type==='accept'){
+    // Clone canvas to strip any stale event listeners, then re-init
+    const old=document.getElementById('vw-sig-canvas');
+    if(old){const fresh=old.cloneNode(false);old.parentNode.replaceChild(fresh,old);}
+    setTimeout(()=>initSignaturePad(),80);
+  }
+}
+
+function vwSelectReason(el){
+  _vwDeclineReason=el.dataset.reason||'';
+  document.querySelectorAll('.vw-decline-opt').forEach(b=>b.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+async function submitDecline(){
+  if(!_vwDeclineReason){
+    const r=document.querySelector('.vw-decline-reasons');
+    if(r){r.style.outline='2px solid #dc2626';setTimeout(()=>r.style.outline='',1400);}
+    return;
+  }
+  const doc=_viewerDoc;
+  const comment=(document.getElementById('vw-decline-comment')?.value||'').trim();
+  const btn=document.querySelector('.vw-action-submit.decline');
+  if(btn){btn.disabled=true;btn.textContent='Declining...';}
+  if(doc?.shareToken){
+    const{error}=await sb.rpc('decline_estimate',{p_token:doc.shareToken,p_reason:_vwDeclineReason,p_comment:comment||null});
+    if(error&&!error.message?.includes('already')){
+      if(btn){btn.disabled=false;btn.textContent='Decline Estimate';}
+      return;
+    }
+  }
+  const area=document.getElementById('vw-action-area');
+  if(area) area.innerHTML='<div class="vw-done-card declined"><div class="vw-done-icon">&#10007;</div><div class="vw-done-title" style="color:#dc2626">Estimate Declined</div><div class="vw-done-notice" style="color:#dc2626">'+(doc?.from||'The contractor')+' has been notified.</div></div>';
+}
+
+async function submitQuery(){
+  const msg=(document.getElementById('vw-query-msg')?.value||'').trim();
+  if(!msg){
+    const ta=document.getElementById('vw-query-msg');
+    if(ta){ta.style.borderColor='#d97706';setTimeout(()=>ta.style.borderColor='',1400);}
+    return;
+  }
+  const doc=_viewerDoc;
+  const btn=document.querySelector('.vw-action-submit.query');
+  if(btn){btn.disabled=true;btn.textContent='Sending...';}
+  if(doc?.shareToken){
+    const{error}=await sb.rpc('query_document',{p_token:doc.shareToken,p_doc_type:doc.type||'estimate',p_message:msg,p_client_name:doc.client||null});
+    if(error){
+      if(btn){btn.disabled=false;btn.textContent='Send Query';}
+      return;
+    }
+  }
+  const area=document.getElementById('vw-action-area');
+  if(area) area.innerHTML='<div class="vw-done-card queried"><div class="vw-done-icon">&#10003;</div><div class="vw-done-title" style="color:#b45309">Query Sent</div><div class="vw-done-notice" style="color:#b45309">'+(doc?.from||'The contractor')+' has been notified of your query.</div></div>';
 }
 
 async function submitSignature(){
