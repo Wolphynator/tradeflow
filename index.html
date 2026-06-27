@@ -1099,6 +1099,19 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
   </div>
 </div>
 
+<!--  SCREEN: ESTIMATE CLIENT PICKER  -->
+<div id="screen-estimate-client-picker" class="screen">
+  <div class="top-nav dark-nav">
+    <div class="back-btn back-arrow" onclick="goBack()" aria-label="Back">←</div>
+    <div class="nav-block"><div class="nav-title">Add Client</div><div class="nav-sub">Use saved or create new</div></div>
+  </div>
+  <div class="scroll pad">
+    <div class="inv-add-box" style="margin-bottom:14px" onclick="openEstimateNewClient()"><span class="inv-add-dot">+</span><span>New Client</span></div>
+    <input id="estimate-client-search" class="finput" placeholder="Search saved clients..." style="margin-bottom:14px" oninput="renderEstimateClientPicker()">
+    <div id="estimate-client-picker-list"></div>
+  </div>
+</div>
+
 <!--  SCREEN: INVOICE NEW CLIENT  -->
 <div id="screen-invoice-new-client" class="screen">
   <div class="top-nav dark-nav">
@@ -1495,7 +1508,7 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
       <div class="client-form-title" data-en-text="Work Address">Work Address</div>
       <div class="client-form-help" data-en-text="Where the work is carried out.">Where the work is carried out.</div>
       <input class="client-line-input" id="client-address1-input" placeholder="Property / Street Address">
-      <input class="client-line-input" id="client-address2-input" placeholder="Flat / Unit (optional)">
+      <input class="client-line-input" id="client-address2-input" placeholder="Flat / Unit (optional)" maxlength="10" oninput="this.value=this.value.replace(/[^A-Za-z0-9]/g,'').slice(0,10)">
       <input class="client-line-input" id="client-city-input" placeholder="City / Town">
       <input class="client-line-input" id="client-state-input" placeholder="County (optional)">
       <input class="client-line-input" id="client-zip-input" placeholder="Postcode">
@@ -1550,6 +1563,13 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
         <button class="cl-del-btn" onclick="confirmDeleteCurrentClient()">Delete Customer</button>
       </div>
     </div>
+  </div>
+  <div class="bot-nav">
+    <div class="bn" onclick="goTo('screen-home')"><div class="bn-ic" data-en-text="🏠">🏠</div><div class="bn-lb" data-en-text="Home">Home</div></div>
+    <div class="bn" onclick="goTo('screen-schedule')"><div class="bn-ic" data-en-text="📅">📅</div><div class="bn-lb" data-en-text="Schedule">Schedule</div></div>
+    <div class="bn" onclick="goTo('screen-estimates')"><div class="bn-ic" data-en-text="📋">📋</div><div class="bn-lb" data-en-text="Estimates">Estimates</div></div>
+    <div class="bn" onclick="goTo('screen-invoices')"><div class="bn-ic inv-nav-ic">£</div><div class="bn-bdg"></div><div class="bn-lb" data-en-text="Invoices">Invoices</div></div>
+    <div class="bn on" onclick="goTo('screen-clients')"><div class="bn-ic on" data-en-text="👥">👥</div><div class="bn-lb on" data-en-text="Clients">Clients</div></div>
   </div>
 </div>
 
@@ -1797,7 +1817,7 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
         <button onclick="copyFallbackField('efm-body','Message')" style="background:var(--brand);color:white;border:none;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:600;cursor:pointer;flex-shrink:0">Copy</button>
       </div>
     </div>
-    <button id="efm-send-btn" style="width:100%;background:var(--brand);color:white;border:1px solid var(--brand);border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px" onclick="sendEmailViaEdgeFunction()">Send Now</button>
+    <button id="efm-send-btn" style="width:100%;background:var(--brand);color:white;border:1px solid var(--brand);border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px" onclick="openMailtoEmail()">Send by Email</button>
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
       <div style="flex:1;height:1px;background:var(--border)"></div>
       <span style="font-size:11px;color:var(--muted);font-weight:600">OR USE YOUR APP</span>
@@ -2607,7 +2627,7 @@ function updateEstimateTermsFromSelect(){
   if(!select) return;
   const dateInput=document.getElementById('new-est-valid-until');
   if(select.value==='custom'){
-    if(dateInput) dateInput.style.display='block';
+    if(dateInput){dateInput.style.display='block';dateInput.min=new Date().toISOString().split('T')[0];}
     const formatted=formatDateInputGB(dateInput?.value||'');
     if(formatted) newEstimate.terms='Valid until '+formatted;
     return;
@@ -2621,7 +2641,7 @@ function updateInvoiceTermsFromSelect(){
   if(!select) return;
   const dateInput=document.getElementById('new-inv-due-date');
   if(select.value==='custom'){
-    if(dateInput) dateInput.style.display='block';
+    if(dateInput){dateInput.style.display='block';dateInput.min=new Date().toISOString().split('T')[0];}
     const formatted=formatDateInputGB(dateInput?.value||'');
     if(formatted) newInvoice.terms='Due on '+formatted;
     return;
@@ -4506,7 +4526,7 @@ async function saveClient(){
     business_id:currentBusiness.id,name,type:'Personal',email,mobile,
     home_phone:getPhoneValue('client-home-input'),
     address_line1:cleanInputValue('client-address1-input','address'),
-    address_line2:cleanInputValue('client-address2-input','address'),
+    address_line2:cleanInputValue('client-address2-input','unit'),
     city:cleanInputValue('client-city-input','short'),
     state:cleanInputValue('client-state-input','short'),
     zip:cleanInputValue('client-zip-input','postcode'),
@@ -5472,9 +5492,49 @@ function pickInvoiceClient(){
 }
 
 function pickEstimateClient(){
-  savedClientPickerMode='estimate';
-  renderSavedClients();
-  goTo('screen-saved-clients');
+  renderEstimateClientPicker();
+  goTo('screen-estimate-client-picker');
+}
+
+function renderEstimateClientPicker(){
+  const q=(document.getElementById('estimate-client-search')?.value||'').toLowerCase();
+  const list=document.getElementById('estimate-client-picker-list');
+  if(!list) return;
+  list.innerHTML=savedClients
+    .filter(c=>!c.archived)
+    .map((client,index)=>({client,index}))
+    .filter(({client})=>(client.name+' '+clientAddrLine(client)+' '+client.city+' '+client.zip+' '+client.email+' '+client.mobile).toLowerCase().includes(q))
+    .map(({client,index})=>{
+      const addrLine=clientAddrLine(client);
+      const cityPc=clientCityPostcode(client);
+      const contact=clientContactLine(client);
+      return '<div class="client-card" onclick="selectEstimateClient('+index+')">'+
+        '<div class="cc-top"><div class="cc-av" style="background:#e8f4ed;color:var(--brand)">'+initials(client.name)+'</div>'+
+        '<div style="flex:1;min-width:0"><div class="cc-name">'+esc(client.name)+'</div>'+
+        '<div class="cc-loc">'+esc(cityPc||'No address saved')+'</div></div></div>'+
+        (addrLine?'<div class="cc-addr">'+esc(addrLine)+'</div>':'')+
+        (contact?'<div class="cc-contact">'+esc(contact)+'</div>':'')+
+      '</div>';
+    }).join('')||'<div class="card" style="padding:18px;text-align:center;color:var(--muted)">No saved clients found.</div>';
+}
+
+function selectEstimateClient(index){
+  if(!savedClients[index]) return;
+  newEstimate.client=savedClients[index];
+  renderNewEstimate();
+  goTo('screen-new-estimate');
+}
+
+let _clientPickerFlow='invoice';
+
+function openEstimateNewClient(){
+  _clientPickerFlow='estimate';
+  ['inv-client-new-name','inv-client-new-email','inv-client-new-address1','inv-client-new-city','inv-client-new-state','inv-client-new-zip'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.value='';
+  });
+  setPhoneValue('inv-client-new-mobile','');
+  goTo('screen-invoice-new-client');
 }
 
 function renderInvoiceClientPicker(){
@@ -5506,6 +5566,7 @@ function selectInvoiceClient(index){
 }
 
 function openInvoiceNewClient(){
+  _clientPickerFlow='invoice';
   ['inv-client-new-name','inv-client-new-email','inv-client-new-address1','inv-client-new-city','inv-client-new-state','inv-client-new-zip'].forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.value='';
@@ -5543,11 +5604,18 @@ async function _executeInvoiceClientInsert(obj){
   savedClients.unshift(data);
   sb.rpc('log_activity',{p_business_id:currentBusiness.id,p_entity_type:'client',p_entity_id:data.id,p_action:'created',p_metadata:{name:data.name}});
   addClientCard();
-  newInvoice.client=data;
   updateClientSummary();
-  renderNewInvoice();
-  goTo('screen-new-invoice');
-  showManageToast('Client added to invoice');
+  if(_clientPickerFlow==='estimate'){
+    newEstimate.client=data;
+    renderNewEstimate();
+    goTo('screen-new-estimate');
+    showManageToast('Client added to estimate');
+  }else{
+    newInvoice.client=data;
+    renderNewInvoice();
+    goTo('screen-new-invoice');
+    showManageToast('Client added to invoice');
+  }
 }
 
 function addInvoiceLine(){
@@ -6879,6 +6947,7 @@ const INPUT_LIMITS={
   email:254,
   phone:32,
   postcode:10,
+  unit:10,
   address:140,
   // Long-form fields need room for detailed scope of works while still blocking runaway paste/data abuse.
   description:12000,
@@ -6892,6 +6961,9 @@ function cleanPlainText(value,kind='short'){
   }
   if(kind==='phone'){
     return String(value??'').replace(/\D/g,'').slice(0,max);
+  }
+  if(kind==='unit'){
+    return String(value??'').replace(/[^A-Za-z0-9]/g,'').slice(0,max);
   }
   return String(value??'')
     .replace(/[\u0000-\u001F\u007F]/g,' ')
@@ -7192,27 +7264,24 @@ function copyFallbackField(id,label){
   navigator.clipboard?.writeText(el.value).then(()=>showManageToast(label+' copied'));
 }
 
-async function sendEmailViaEdgeFunction(){
-  if(!_pendingEmail){showManageToast('Link is still generating');return;}
-  const btn=document.getElementById('efm-send-btn');
-  if(btn){btn.textContent='Sending…';btn.disabled=true;btn.style.opacity='.7';}
-  try{
-    const{error}=await sb.functions.invoke('send-invoice-email',{body:_pendingEmail});
-    if(error) throw error;
-    if(btn){btn.textContent='Sent ✓';btn.style.background='var(--success)';}
-    showManageToast('Email sent to '+_pendingEmail.to);
-    setTimeout(()=>closeEmailFallback(),1800);
-  }catch(e){
-    if(btn){btn.textContent='Send Now';btn.disabled=false;btn.style.opacity='1';}
-    showManageToast('Could not send — use Share or Email app below');
-  }
+function openMailtoEmail(){
+  const email=document.getElementById('efm-email')?.value.trim();
+  const subject=document.getElementById('efm-subject')?.value||'';
+  const body=document.getElementById('efm-body')?.value||'';
+  if(!email||!isShareMessageReady(body)){showManageToast('Link is still generating');return;}
+  const a=document.createElement('a');
+  a.href='mailto:'+encodeURIComponent(email)+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+  a.rel='noopener';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
 }
 
 function closeEmailFallback(){
   document.getElementById('email-fallback-modal').classList.remove('open');
   _pendingEmail=null;
   const btn=document.getElementById('efm-send-btn');
-  if(btn){btn.textContent='Send Now';btn.style.background='var(--brand)';btn.disabled=false;btn.style.opacity='1';}
+  if(btn){btn.textContent='Send by Email';btn.style.background='var(--brand)';btn.disabled=false;btn.style.opacity='1';}
 }
 
 function closeSmsFallback(){
