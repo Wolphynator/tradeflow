@@ -1251,8 +1251,8 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
       <div class="inv-fab-item" id="estimate-convert-action" onclick="invAction('convert-estimate')" style="display:none"><div class="inv-fab-label" id="estimate-convert-label">Convert to Invoice</div><div class="inv-fab-ic currency-fab-ic">£</div></div>
       <div class="inv-fab-item" id="estimate-schedule-action" onclick="invAction('schedule-estimate')" style="display:none"><div class="inv-fab-label" id="estimate-schedule-label">Add to Schedule</div><div class="inv-fab-ic">&#128197;</div></div>
       <div class="inv-fab-item" onclick="invAction('payments')"><div class="inv-fab-label" data-en-text="Payments">Payments</div><div class="inv-fab-ic currency-fab-ic">£</div></div>
-      <div class="inv-fab-item" onclick="invAction('email')"><div class="inv-fab-label" data-en-text="Email">Email</div><div class="inv-fab-ic">@</div></div>
-      <div class="inv-fab-item" onclick="invAction('sms')"><div class="inv-fab-label" data-en-text="SMS">SMS</div><div class="inv-fab-ic">SMS</div></div>
+      <div class="inv-fab-item" onclick="invAction('email')"><div class="inv-fab-label" data-en-text="Send by Email">Send by Email</div><div class="inv-fab-ic">@</div></div>
+      <div class="inv-fab-item" onclick="invAction('sms')"><div class="inv-fab-label" data-en-text="Send by SMS">Send by SMS</div><div class="inv-fab-ic">SMS</div></div>
       <div class="inv-fab-item" onclick="invShareLink()"><div class="inv-fab-label" data-en-text="Share Link">Share Link</div><div class="inv-fab-ic">&#128279;</div></div>
       <div class="inv-fab-pdf-wrap"><div class="inv-fab-item" onclick="togglePrintSubmenu(event)"><div class="inv-fab-label">Print / PDF</div><div class="inv-fab-ic">&#128196;</div></div><div class="inv-pdf-submenu hidden" id="inv-pdf-submenu"><div class="inv-fab-subitem" onclick="invAction('print')"><div class="inv-fab-sublabel">🖨️ Print</div></div><div class="inv-fab-subitem" onclick="invAction('save-pdf')"><div class="inv-fab-sublabel">📥 Save PDF</div></div></div></div>
     </div>
@@ -1392,7 +1392,6 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
         <div class="client-menu-item" onclick="openClientEditor()">Add New Client</div>
         <div class="client-menu-item" onclick="enterClientSelectMode()">Select / Manage</div>
         <div class="client-menu-item" onclick="setClientFilter('Archived');closeClientMenu()">View Archived</div>
-        <div class="client-menu-item dev-item" id="dev-clean-item" onclick="cleanTestClients()">Dev: Clean Test Data</div>
       </div>
     </div>
   </div>
@@ -4413,18 +4412,6 @@ async function deleteSelectedClients(){
   showManageToast(indices.length+' customer'+(indices.length===1?'':'s')+' deleted');
 }
 
-/* ── Dev Cleanup Tool ── */
-function cleanTestClients(){
-  closeClientMenu();
-  const TEST_WORDS=['test','demo','sample','fake','dummy','temp','example'];
-  const before=savedClients.length;
-  savedClients=savedClients.filter(c=>!TEST_WORDS.some(w=>c.name.toLowerCase().includes(w)));
-  const removed=before-savedClients.length;
-  renderClientList();
-  updateClientSummary();
-  renderSavedClients();
-  showManageToast(removed?'Removed '+removed+' test customer'+(removed===1?'':'s'):'No test customers found');
-}
 
 function initials(name){
   return name.split(/\s+/).filter(Boolean).slice(0,2).map(p=>p[0].toUpperCase()).join('')||'CL';
