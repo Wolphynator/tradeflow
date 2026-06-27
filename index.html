@@ -7818,10 +7818,11 @@ async function checkViewerMode(){
       const{data,error}=await sb.rpc(rpcName,{p_token:token});
       console.log('[viewer] rpc result:',{data,error,token,rpcName});
       if(error||!data) return false;
-      const raw=data[docKey];
+      const result=Array.isArray(data)?data[0]:data;
+      const raw=result?.[docKey];
       if(!raw) return false;
       const shaped={
-        doc:raw,type:docType,lines:data.lines||[],
+        doc:raw,type:docType,lines:result.lines||[],
         biz:{name:raw.from_name||'',address:raw.from_address||'',phone:raw.from_phone||'',email:raw.from_email||'',logo_url:raw.logo_data||''}
       };
       const viewerDoc=transformShareViewData(shaped);
