@@ -1123,7 +1123,7 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
     <div class="client-form-section">
       <div class="client-form-title">Basic Info</div>
       <input class="client-line-input" id="inv-client-new-name" placeholder="Client Name">
-      <input class="client-line-input" id="inv-client-new-email" type="email" placeholder="Email">
+      <input class="client-line-input" id="inv-client-new-email" type="email" placeholder="Email" oninput="this.value=this.value.toLowerCase().replace(/\s/g,'')">
       <div class="phone-input-row">
         <div class="phone-prefix-box"><span>+</span><input id="inv-client-new-mobile-prefix" inputmode="numeric" maxlength="4" placeholder="44" value="44"></div>
         <input class="client-line-input" id="inv-client-new-mobile" inputmode="numeric" placeholder="Phone number">
@@ -1494,7 +1494,7 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
     <div class="client-form-section">
       <div class="client-form-title" data-en-text="Basic Info">Basic Info</div>
       <input class="client-line-input" id="client-name-input" placeholder="Client Name">
-      <input class="client-line-input" id="client-email-input" type="email" placeholder="Email">
+      <input class="client-line-input" id="client-email-input" type="email" placeholder="Email" oninput="this.value=this.value.toLowerCase().replace(/\s/g,'')">
       <div class="phone-input-row">
         <div class="phone-prefix-box"><span>+</span><input id="client-mobile-input-prefix" inputmode="numeric" maxlength="4" placeholder="44" value="44"></div>
         <input class="client-line-input" id="client-mobile-input" inputmode="numeric" placeholder="Mobile Phone">
@@ -6964,6 +6964,9 @@ function cleanPlainText(value,kind='short'){
   }
   if(kind==='unit'){
     return String(value??'').replace(/[^A-Za-z0-9]/g,'').slice(0,max);
+  }
+  if(kind==='email'){
+    return String(value??'').toLowerCase().replace(/\s/g,'').slice(0,max);
   }
   return String(value??'')
     .replace(/[\u0000-\u001F\u007F]/g,' ')
