@@ -5522,18 +5522,19 @@ function docOutstandingBalance(doc,paidAmt){
 }
 function renderPayments(){
   const fullOwed=Math.max(docEffectiveTotal(currentDetailDoc)-(Number(currentDetailDoc?.deposit)||0),0);
-  const paid=Math.min(paidTotal(),fullOwed);
+  const totalPaid=paidTotal();
+  const paid=Math.min(totalPaid,fullOwed);
   const due=Math.max(fullOwed-paid,0);
-  const pct=fullOwed?Math.min(100,(paid/fullOwed)*100):100;
+  const pct=fullOwed?(due<=0?100:Math.min(99,Math.round((paid/fullOwed)*100))):(totalPaid>0?100:0);
   document.getElementById('payment-due-label').textContent=gbp(due);
   const paidBar=document.getElementById('payment-paid-bar');
   const dueBar=document.getElementById('payment-due-bar');
   paidBar.style.width=pct+'%';
-  paidBar.style.display=paid>0?'flex':'none';
-  paidBar.textContent=gbp(paid)+' paid';
+  paidBar.style.display=totalPaid>0?'flex':'none';
+  paidBar.textContent=gbp(totalPaid)+' paid';
   dueBar.textContent=gbp(due)+' due';
   dueBar.style.display=due>0?'flex':'none';
-  document.getElementById('inv-paid-total').textContent=gbp(paid);
+  document.getElementById('inv-paid-total').textContent=gbp(totalPaid);
   const list=document.getElementById('payment-list');
   list.innerHTML=invoicePayments.map((p,i)=>'<div class="payment-row"><div><div class="payment-amount">'+gbp(p.amount)+'</div><div class="payment-meta">'+esc(p.date)+' / '+esc(p.method)+(p.note?' / '+esc(p.note):'')+'</div></div><div style="display:flex;align-items:center;gap:12px"><span style="color:var(--success);font-weight:800">Paid</span><button class="pay-del-btn" onclick="deletePayment('+i+')">×</button></div></div>').join('')||
     '<div class="payment-row"><div><div class="payment-amount">No payments yet</div><div class="payment-meta">Tap + to record the first payment</div></div></div>';
