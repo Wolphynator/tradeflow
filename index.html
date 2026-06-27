@@ -850,7 +850,7 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
     <input class="expense-input" id="schedule-title-input" placeholder="Job title or reminder" maxlength="120">
     <input class="expense-input" id="schedule-client-input" placeholder="Client or address" maxlength="120">
     <div class="frow2" style="margin-bottom:10px">
-      <input class="expense-input" id="schedule-date-input" type="date">
+      <input class="expense-input" id="schedule-date-input" type="date" onchange="updateScheduleTimeMin()">
       <input class="expense-input" id="schedule-time-input" type="time">
     </div>
     <div class="frow2" style="margin-bottom:10px">
@@ -3070,15 +3070,22 @@ function openScheduleDetail(index){
   setText('#schedule-detail-note',item.note||'No notes added.');
   const actions=document.getElementById('schedule-detail-actions');
   if(actions){
-    const buttons=[];
-    if(item.sourceEstimateId) buttons.push('<button class="btn-s" onclick="openLinkedEstimateFromSchedule()">View Estimate</button>');
-    if(item.sourceInvoiceId) buttons.push('<button class="btn-p" onclick="openLinkedInvoiceFromSchedule()">View Invoice</button>');
-    actions.innerHTML=buttons.join('');
-    actions.innerHTML+='<div style="display:flex;gap:8px;margin-top:10px;width:100%">'
-      +'<button class="btn-s" style="flex:1" onclick="editScheduleItem()">Edit</button>'
-      +(item.status!=='Cancelled'?'<button class="btn-s" style="flex:1;color:var(--warning);border-color:var(--warning)" onclick="cancelScheduleItem()">Cancel</button>':'')
-      +'<button class="btn-s" style="flex:1;color:var(--danger);border-color:var(--danger)" onclick="confirmDeleteScheduleItem()">Delete</button>'
-      +'</div>';
+    const linkedBtns=[];
+    if(item.sourceEstimateId) linkedBtns.push('<button class="btn-s" onclick="openLinkedEstimateFromSchedule()">View Estimate</button>');
+    if(item.sourceInvoiceId) linkedBtns.push('<button class="btn-p" onclick="openLinkedInvoiceFromSchedule()">View Invoice</button>');
+    actions.innerHTML=linkedBtns.join('');
+    const past=isScheduleItemPast(item);
+    if(past){
+      actions.innerHTML+='<div style="display:flex;gap:8px;margin-top:10px;width:100%">'
+        +'<button class="btn-s" style="flex:1;color:var(--danger);border-color:var(--danger)" onclick="confirmDeleteScheduleItem()">Delete</button>'
+        +'</div>';
+    }else{
+      actions.innerHTML+='<div style="display:flex;gap:8px;margin-top:10px;width:100%">'
+        +'<button class="btn-s" style="flex:1" onclick="editScheduleItem()">Edit</button>'
+        +(item.status!=='Cancelled'?'<button class="btn-s" style="flex:1;color:var(--warning);border-color:var(--warning)" onclick="cancelScheduleItem()">Cancel</button>':'')
+        +'<button class="btn-s" style="flex:1;color:var(--danger);border-color:var(--danger)" onclick="confirmDeleteScheduleItem()">Delete</button>'
+        +'</div>';
+    }
   }
   goTo('screen-schedule-detail');
 }
@@ -3095,6 +3102,24 @@ function openLinkedInvoiceFromSchedule(){
   const index=item?invoices.findIndex(inv=>inv.id===item.sourceInvoiceId):-1;
   if(index>=0){openInvoiceDetail(index);return;}
   showManageToast('Linked invoice not found');
+}
+
+function isScheduleItemPast(item){
+  const dt=new Date((item.date||'')+'T'+(item.time||'00:00'));
+  return dt<new Date();
+}
+
+function updateScheduleTimeMin(){
+  const dateEl=document.getElementById('schedule-date-input');
+  const timeEl=document.getElementById('schedule-time-input');
+  if(!dateEl||!timeEl) return;
+  const today=new Date().toISOString().split('T')[0];
+  if(dateEl.value===today){
+    const now=new Date();
+    timeEl.min=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  }else{
+    timeEl.min='';
+  }
 }
 
 function editScheduleItem(){
@@ -3156,6 +3181,7 @@ function openScheduleSheet(prefill, editIndex){
   modal.dataset.editIndex=editIndex!=null?editIndex:'';
   document.getElementById('schedule-modal-title').textContent=editIndex!=null?'Edit Schedule Item':'New Schedule Item';
   modal.classList.add('open');
+  updateScheduleTimeMin();
   setTimeout(()=>document.getElementById('schedule-title-input').focus(),60);
 }
 
