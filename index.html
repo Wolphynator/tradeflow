@@ -7500,12 +7500,24 @@ async function doEmailAction(){
   setSendButtonsReady(['efm-send-btn','efm-open-btn','efm-mailto-btn'],false);
   document.getElementById('email-fallback-modal').classList.add('open');
   const link=await generateShareLink(currentDetailType||'invoice');
-  const bodyText=
-    'Hi '+clientFirst+',\n\n'+
-    'Please find your '+docType.toLowerCase()+' ('+docId+') from '+bizName+' at the link below:\n\n'+
-    link+'\n\n'+
-    (total?'Total: '+total+'\n\n':'')+
-    'Thank you for your business.\n\n'+bizName;
+  const isEstimateDoc=currentDetailType==='estimate';
+  const bodyText=isEstimateDoc
+    ? 'Hi '+clientFirst+',\n\n'
+      +'Thank you for giving us the opportunity to quote for your project. '
+      +'Please find your estimate ('+docId+') at the link below:\n\n'
+      +link+'\n\n'
+      +(total?'Estimate total: '+total+'\n\n':'')
+      +'We would love the chance to work with you. '
+      +'If you have any questions or would like to discuss the details, please don\'t hesitate to get in touch.\n\n'
+      +'Kind regards,\n'+bizName
+    : 'Hi '+clientFirst+',\n\n'
+      +'It has been a pleasure working with you. '
+      +'Please find your invoice ('+docId+') at the link below:\n\n'
+      +link+'\n\n'
+      +(total?'Total: '+total+'\n\n':'')
+      +'If you have any questions, feel free to get in touch. '
+      +'We look forward to working with you again.\n\n'
+      +'Kind regards,\n'+bizName;
   document.getElementById('efm-body').value=bodyText;
   _pendingEmail={to:email,subject,bodyText,fromName:bizName,link,clientFirst,docType,docId,total};
   setSendButtonsReady(['efm-send-btn','efm-open-btn','efm-mailto-btn'],true);
@@ -7531,7 +7543,10 @@ async function doSMSAction(){
   setSendButtonsReady(['sfm-sms-btn'],false);
   document.getElementById('sms-fallback-modal').classList.add('open');
   const link=await generateShareLink(currentDetailType||'invoice');
-  const msg=greeting+'here is your '+docType+' ('+docId+') from '+bizName+':\n'+link;
+  const isEstimateSMS=currentDetailType==='estimate';
+  const msg=isEstimateSMS
+    ? 'Hi '+clientFirst+', thank you for giving us the opportunity to quote! Here is your estimate ('+docId+') from '+bizName+':\n'+link+'\nWe\'d love to work with you.'
+    : 'Hi '+clientFirst+', it was a pleasure working with you. Here is your invoice ('+docId+') from '+bizName+':\n'+link+(doc.total!=null?'\nTotal: '+money(doc.total):'');
   document.getElementById('sfm-msg').value=msg;
   setSendButtonsReady(['sfm-sms-btn'],true);
 }
