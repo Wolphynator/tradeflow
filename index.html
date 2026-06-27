@@ -1501,6 +1501,16 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
   </div>
 </div>
 
+<!--  SCREEN: WORK ORDER VIEWER  -->
+<div id="screen-work-order" class="screen" style="display:flex;flex-direction:column">
+  <div class="top-nav dark-nav">
+    <div class="back-btn back-arrow" onclick="goBack()" aria-label="Back">←</div>
+    <div class="nav-block"><div class="nav-title">Work Order</div></div>
+    <div class="nav-icon-btn nav-text-btn" onclick="printWorkOrder()">Print</div>
+  </div>
+  <iframe id="work-order-frame" style="width:100%;flex:1;border:none;background:#fff;display:block"></iframe>
+</div>
+
 <!--  SCREEN: JOB DETAIL  -->
 <div id="screen-job-detail" class="screen">
   <div class="top-nav">
@@ -8497,6 +8507,8 @@ function enrichPrintData(data,docType){
   };
 }
 
+let _workOrderHTML='';
+
 function downloadWorkOrder(){
   const doc=currentDetailDoc;
   const type=currentDetailType||'invoice';
@@ -8509,18 +8521,24 @@ function downloadWorkOrder(){
   if(!schedItem&&type==='invoice') schedItem=scheduleItems.find(s=>s.sourceInvoiceId===doc.id)||null;
   const data={
     ...doc,
-    from:biz.from,
-    fromAddr:biz.fromAddr,
-    fromPhone:biz.fromPhone,
-    fromEmail:biz.fromEmail,
-    logo:biz.logo,
-    clientPhone:client?.mobile||client?.home_phone||'',
-    clientEmail:client?.email||''
+    from:biz.from,fromAddr:biz.fromAddr,fromPhone:biz.fromPhone,fromEmail:biz.fromEmail,logo:biz.logo,
+    clientPhone:client?.mobile||client?.home_phone||'',clientEmail:client?.email||''
   };
-  const html=printWorkOrderHTML(data,type,schedItem);
+  _workOrderHTML=printWorkOrderHTML(data,type,schedItem);
+  const frame=document.getElementById('work-order-frame');
+  if(frame){
+    const blob=new Blob([_workOrderHTML],{type:'text/html'});
+    const url=URL.createObjectURL(blob);
+    frame.src=url;
+    setTimeout(()=>URL.revokeObjectURL(url),30000);
+  }
+  goTo('screen-work-order');
+}
+
+function printWorkOrder(){
   const win=window.open('','_blank');
-  if(!win){showManageToast('Allow pop-ups to open Work Order');return;}
-  win.document.write(html);
+  if(!win){showManageToast('Allow pop-ups to print');return;}
+  win.document.write(_workOrderHTML);
   win.document.close();
   win.focus();
   setTimeout(()=>{win.print();},450);
