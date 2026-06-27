@@ -7816,6 +7816,7 @@ async function checkViewerMode(){
     const docKey=isEstToken?'estimate':'invoice';
     try{
       const{data,error}=await sb.rpc(rpcName,{p_token:token});
+      console.log('[viewer] rpc result:',{data,error,token,rpcName});
       if(error||!data) return false;
       const raw=data[docKey];
       if(!raw) return false;
@@ -7833,6 +7834,7 @@ async function checkViewerMode(){
       if(viewerDoc.topic) setTimeout(()=>notifyContractor(viewerDoc,'opened'),600);
       return true;
     }catch(e){
+      console.error('[viewer] checkViewerMode error:',e);
       if(appEl) appEl.style.display='';
       if(root) root.style.display='none';
       return false;
