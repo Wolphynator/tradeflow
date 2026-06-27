@@ -851,7 +851,10 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
     <input class="expense-input" id="schedule-client-input" placeholder="Client or address" maxlength="120">
     <div class="frow2" style="margin-bottom:10px">
       <input class="expense-input" id="schedule-date-input" type="date" onchange="updateScheduleTimeMin()">
-      <input class="expense-input" id="schedule-time-input" type="time">
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <input class="expense-input" id="schedule-time-input" type="time" onchange="checkScheduleTimePast()">
+        <span id="schedule-time-error" style="display:none;font-size:12px;color:var(--danger);font-weight:600;padding-left:2px">⚠ Please select a future time</span>
+      </div>
     </div>
     <div class="frow2" style="margin-bottom:10px">
       <input class="expense-input" id="schedule-type-input" placeholder="Type (e.g. Site Visit, Cleaning)" maxlength="60">
@@ -3120,6 +3123,23 @@ function updateScheduleTimeMin(){
   }else{
     timeEl.min='';
   }
+  checkScheduleTimePast();
+}
+
+function checkScheduleTimePast(){
+  const dateEl=document.getElementById('schedule-date-input');
+  const timeEl=document.getElementById('schedule-time-input');
+  const errEl=document.getElementById('schedule-time-error');
+  if(!dateEl||!timeEl||!errEl) return;
+  const today=new Date().toISOString().split('T')[0];
+  if(dateEl.value===today&&timeEl.value){
+    const[hh,mm]=timeEl.value.split(':').map(Number);
+    const now=new Date();
+    const past=(hh*60+mm)<=(now.getHours()*60+now.getMinutes());
+    errEl.style.display=past?'block':'none';
+  }else{
+    errEl.style.display='none';
+  }
 }
 
 function editScheduleItem(){
@@ -3187,6 +3207,8 @@ function openScheduleSheet(prefill, editIndex){
 
 function closeScheduleSheet(){
   document.getElementById('schedule-modal').classList.remove('open');
+  const errEl=document.getElementById('schedule-time-error');
+  if(errEl) errEl.style.display='none';
 }
 
 function saveScheduleItem(){
