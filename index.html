@@ -1359,9 +1359,10 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
     <div class="manage-sheet-title" data-en-text="New Payment">New Payment</div>
     <div class="manage-sheet-sub" data-en-text="Add the amount the client paid.">Add the amount the client paid.</div>
     <div style="display:grid;grid-template-columns:minmax(0,1fr) 86px;gap:8px;margin-bottom:8px">
-      <input class="expense-input no-spin" id="payment-amount-input" type="text" inputmode="decimal" pattern="[0-9.]*" placeholder="Amount paid" oninput="sanitizeNumericField(this)">
+      <input class="expense-input no-spin" id="payment-amount-input" type="text" inputmode="decimal" pattern="[0-9.]*" placeholder="Amount paid" oninput="sanitizeNumericField(this);clearPaymentAmountError()">
       <button class="payment-full-btn" type="button" onclick="fillFullPaymentAmount()">Full</button>
     </div>
+    <div id="payment-amount-error" style="display:none;color:var(--danger);font-size:12px;font-weight:600;margin:-4px 0 8px 2px"></div>
     <select class="expense-input" id="payment-method-input" style="margin-bottom:8px">
       <option data-en-text="Cash">Cash</option><option data-en-text="Bank transfer">Bank transfer</option><option data-en-text="Card">Card</option><option data-en-text="Cheque">Cheque</option><option data-en-text="Other">Other</option>
     </select>
@@ -5561,6 +5562,13 @@ async function deletePayment(index){
 
 function closePaymentSheet(){
   document.getElementById('payment-modal').classList.remove('open');
+  clearPaymentAmountError();
+}
+function clearPaymentAmountError(){
+  const errEl=document.getElementById('payment-amount-error');
+  if(errEl){errEl.style.display='none';errEl.textContent='';}
+  const amEl=document.getElementById('payment-amount-input');
+  if(amEl) amEl.style.borderColor='';
 }
 
 async function savePayment(){
@@ -5578,7 +5586,13 @@ async function savePayment(){
   const paymentDateISO=new Date().toISOString().split('T')[0];
   const baseAmount=displayToBase(entered);
   const remaining=docOutstandingBalance(currentDetailDoc,paidTotal());
-  if(baseAmount>remaining+0.005){showManageToast('Exceeds balance due — max '+money(remaining));return;}
+  if(baseAmount>remaining+0.005){
+    const errEl=document.getElementById('payment-amount-error');
+    if(errEl){errEl.textContent='Amount exceeds balance due ('+money(remaining)+') — use the Full button or enter a lower amount.';errEl.style.display='block';}
+    const amEl=document.getElementById('payment-amount-input');
+    if(amEl){amEl.style.borderColor='var(--danger)';}
+    return;
+  }
   const method=document.getElementById('payment-method-input').value;
   const note=cleanInputValue('payment-note-input','notes');
   let newPaymentId=null;
