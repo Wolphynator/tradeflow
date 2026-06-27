@@ -198,6 +198,7 @@ button[style*="background:var(--bg)"],button[style*="background: var(--bg)"]{
 .adot{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
 .adot.g{background:var(--success-light)}.adot.a{background:var(--accent-light)}.adot.b{background:#eff6ff}.adot.r{background:var(--danger-light)}
 .at{font-size:13px;font-weight:600}.ad{font-size:12px;color:var(--muted);margin-top:2px}.ats{font-size:11px;color:var(--muted);margin-top:3px}
+#home-bell-badge{position:absolute;top:3px;right:3px;width:9px;height:9px;border-radius:50%;background:#ef4444;border:2px solid var(--brand);pointer-events:none}
 
 
 /*  Estimate  */
@@ -663,7 +664,7 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
     <div class="sb-section">
       <div class="sb-section-label" data-en-text="More">More</div>
       <div class="sb-item" onclick="openManage('refer')"><div class="sb-item-ic" data-en-text="🎁">🎁</div><div class="sb-item-copy"><div class="sb-item-text" data-en-text="Refer &amp; Earn">Refer &amp; Earn</div><div class="sb-item-sub">Invite contractors</div></div><span class="sb-item-badge soon">Soon</span></div>
-      <div class="sb-item" onclick="openManage('notifications')"><div class="sb-item-ic" style="background:var(--accent-light)" data-en-text="🔔">🔔</div><div class="sb-item-copy"><div class="sb-item-text" data-en-text="Notifications">Notifications</div><div class="sb-item-sub">Invoice and estimate activity</div></div><span class="sb-item-badge alert" id="notif-badge" style="display:none"></span></div>
+      <div class="sb-item" onclick="openNotifications()"><div class="sb-item-ic" style="background:var(--accent-light)" data-en-text="🔔">🔔</div><div class="sb-item-copy"><div class="sb-item-text" data-en-text="Notifications">Notifications</div><div class="sb-item-sub">Invoice and estimate activity</div></div><span class="sb-item-badge alert" id="notif-badge" style="display:none"></span></div>
       <div class="sb-item" onclick="openManage('help')"><div class="sb-item-ic" data-en-text="?">?</div><div class="sb-item-copy"><div class="sb-item-text" data-en-text="Help &amp; Support">Help &amp; Support</div><div class="sb-item-sub">Guides and contact support</div></div><span class="chevron" data-en-text="&gt;">&gt;</span></div>
       <div class="sb-item" onclick="openManage('about')"><div class="sb-item-ic" data-en-text="i">i</div><div class="sb-item-copy"><div class="sb-item-text" data-en-text="About TradeFlow">About TradeFlow</div><div class="sb-item-sub">Version, privacy, terms</div></div><span class="chevron" data-en-text="&gt;">&gt;</span></div>
     </div>
@@ -767,6 +768,7 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
   <div class="top-nav">
     <div class="hamburger" onclick="openSidebar()"><span></span><span></span><span></span></div>
     <div class="nav-block"><div class="nav-title" data-en-text="TradeFlow">TradeFlow</div><div class="nav-sub" id="home-greeting" data-en-text="Good morning">Good morning</div></div>
+    <div class="nav-icon-btn" onclick="openNotifications()" aria-label="Notifications" style="font-size:18px;position:relative">🔔<span id="home-bell-badge" style="display:none"></span></div>
   </div>
   <div class="scroll pad">
     <div class="stats-grid">
@@ -803,6 +805,15 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
     </div>
     <div class="home-fab-main" id="home-fab-main" onclick="toggleHomeFAB()">+ Create</div>
   </div>
+</div>
+
+<!--  SCREEN: NOTIFICATIONS  -->
+<div id="screen-notifications" class="screen">
+  <div class="top-nav">
+    <div class="back-btn back-arrow" onclick="goBack()" aria-label="Back">←</div>
+    <div class="nav-block"><div class="nav-title">Notifications</div><div class="nav-sub" id="notif-screen-sub">Activity</div></div>
+  </div>
+  <div class="scroll" id="notif-list" style="padding-top:8px"></div>
 </div>
 
 <!--  SCREEN: SCHEDULE  -->
@@ -2347,6 +2358,8 @@ function goTo(id){
   if(id==='screen-schedule') renderSchedule();
   if(id==='screen-estimates'){renderEstimateList();if(currentUser)loadEstimates().catch(()=>{});}
   if(id==='screen-invoices'&&currentUser) loadInvoices().catch(()=>{});
+  if(id==='screen-home'&&currentUser) loadHomeActivity();
+  if(id==='screen-notifications') loadNotifications();
   // close inv fab if open
   if(invFabOpen) toggleInvFAB();
 }
@@ -7458,6 +7471,13 @@ async function sendViaEdgeFunction(){
     const json=await res.json();
     if(!res.ok) throw new Error(json.error||'Send failed');
     showManageToast('Email sent to '+_pendingEmail.to);
+    if(currentBusiness?.id){
+      sb.rpc('log_activity',{p_business_id:currentBusiness.id,
+        p_entity_type:(_pendingEmail.docType||'invoice').toLowerCase(),
+        p_entity_id:currentDetailDoc?._id||_pendingEmail.docId,
+        p_action:'email_sent',
+        p_metadata:{to:_pendingEmail.to,doc_number:_pendingEmail.docId,total:_pendingEmail.total}});
+    }
     closeEmailFallback();
   }catch(e){
     showManageToast('Failed to send: '+e.message);
@@ -7475,6 +7495,140 @@ function closeEmailFallback(){
 
 function closeSmsFallback(){
   document.getElementById('sms-fallback-modal').classList.remove('open');
+}
+
+function openNotifications(){
+  closeSidebar();
+  goTo('screen-notifications');
+  localStorage.setItem('notif_last_seen',Date.now().toString());
+  const bell=document.getElementById('home-bell-badge');
+  if(bell) bell.style.display='none';
+  const nb=document.getElementById('notif-badge');
+  if(nb) nb.style.display='none';
+}
+
+function relativeTime(date){
+  const sec=Math.floor((Date.now()-date.getTime())/1000);
+  if(sec<60) return 'Just now';
+  if(sec<3600) return Math.floor(sec/60)+'m ago';
+  if(sec<86400) return Math.floor(sec/3600)+'h ago';
+  if(sec<604800) return Math.floor(sec/86400)+'d ago';
+  return date.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+}
+
+function renderActivityItem(entry){
+  const map={
+    email_sent:{dot:'b',ic:'✉'},
+    viewed:{dot:'a',ic:'👁'},
+    created:{dot:'g',ic:'✓'},
+    updated:{dot:'b',ic:'✏'},
+    converted:{dot:'g',ic:'⇄'},
+    signed:{dot:'g',ic:'✍'},
+    payment:{dot:'g',ic:'£'},
+    archived:{dot:'r',ic:'↓'},
+    restored:{dot:'g',ic:'↑'},
+    overdue:{dot:'r',ic:'!'}
+  };
+  const action=entry.action||'';
+  const cfg=map[action]||{dot:'b',ic:'•'};
+  const meta=entry.metadata||{};
+  const entityType=(entry.entity_type||'').replace('_',' ');
+  let label='',sub='';
+  if(action==='email_sent'){
+    label=(meta.doc_number||entityType)+' sent by email';
+    sub='To: '+(meta.to||'client')+(meta.total?' — '+meta.total:'');
+  }else if(action==='viewed'){
+    label=(meta.doc_number||entityType)+' viewed by client';
+    sub=meta.client_name||'';
+  }else if(action==='created'){
+    label=(meta.name||meta.doc_number||entityType)+' created';
+    sub=entityType;
+  }else if(action==='updated'){
+    label=(meta.name||meta.doc_number||entityType)+' updated';
+    sub=entityType;
+  }else if(action==='converted'){
+    label='Estimate converted to invoice';
+    sub=meta.invoice_number||'';
+  }else if(action==='signed'){
+    label='Estimate signed by '+(meta.signed_by||'client');
+    sub=meta.doc_number||entityType;
+  }else if(action==='payment'){
+    label='Payment recorded';
+    sub=(meta.amount||'')+(meta.doc_number?' on '+meta.doc_number:'');
+  }else if(action==='archived'){
+    label=(meta.name||entityType)+' archived';
+    sub=entityType;
+  }else if(action==='restored'){
+    label=(meta.name||entityType)+' restored';
+    sub=entityType;
+  }else{
+    label=entityType+' '+action;
+  }
+  const ts=entry.created_at?relativeTime(new Date(entry.created_at)):'';
+  return '<div class="act-item">'
+    +'<div class="adot '+cfg.dot+'">'+cfg.ic+'</div>'
+    +'<div style="flex:1;min-width:0">'
+    +'<div class="at">'+esc(label)+'</div>'
+    +(sub?'<div class="ad">'+esc(sub)+'</div>':'')
+    +'<div class="ats">'+esc(ts)+'</div>'
+    +'</div></div>';
+}
+
+async function loadNotifications(){
+  const listEl=document.getElementById('notif-list');
+  if(!listEl) return;
+  if(!currentBusiness?.id){
+    listEl.innerHTML='<div class="act-item" style="border:none"><div class="adot b">🔔</div><div><div class="at">Sign in to see activity</div></div></div>';
+    return;
+  }
+  listEl.innerHTML='<div class="act-item" style="border:none;opacity:.5"><div class="adot b">⏳</div><div><div class="at">Loading…</div></div></div>';
+  try{
+    const {data,error}=await sb.from('activity_log')
+      .select('*')
+      .eq('business_id',currentBusiness.id)
+      .order('created_at',{ascending:false})
+      .limit(100);
+    if(error) throw error;
+    if(!data||!data.length){
+      document.getElementById('notif-screen-sub').textContent='No activity yet';
+      listEl.innerHTML='<div class="act-item" style="border:none"><div class="adot b">🔔</div><div><div class="at">No activity yet</div><div class="ad">Sent emails, client views, and status changes appear here.</div></div></div>';
+      return;
+    }
+    document.getElementById('notif-screen-sub').textContent=data.length+' item'+(data.length===1?'':'s');
+    listEl.innerHTML=data.map(renderActivityItem).join('');
+  }catch(e){
+    listEl.innerHTML='<div class="act-item" style="border:none"><div class="adot r">!</div><div><div class="at">Could not load activity</div><div class="ad">'+esc(e.message)+'</div></div></div>';
+  }
+}
+
+async function loadHomeActivity(){
+  const listEl=document.getElementById('home-activity');
+  if(!listEl||!currentBusiness?.id) return;
+  try{
+    const {data}=await sb.from('activity_log')
+      .select('*')
+      .eq('business_id',currentBusiness.id)
+      .order('created_at',{ascending:false})
+      .limit(5);
+    if(!data||!data.length){
+      listEl.innerHTML='<div class="act-item" style="border:none;opacity:.6"><div class="adot b">🔔</div><div><div class="at" style="font-weight:400;color:var(--muted)">No activity yet — send an invoice or estimate to get started.</div></div></div>';
+      return;
+    }
+    const lastSeen=parseInt(localStorage.getItem('notif_last_seen')||'0',10);
+    const unread=data.filter(e=>new Date(e.created_at).getTime()>lastSeen).length;
+    if(unread>0) updateNotifBadge(unread);
+    listEl.innerHTML=data.map(renderActivityItem).join('');
+  }catch(e){}
+}
+
+function updateNotifBadge(count){
+  const bell=document.getElementById('home-bell-badge');
+  const sidebar=document.getElementById('notif-badge');
+  if(bell) bell.style.display=count>0?'block':'none';
+  if(sidebar){
+    if(count>0){sidebar.textContent=count+' new';sidebar.style.display='';}
+    else{sidebar.style.display='none';}
+  }
 }
 
 function setNativeSendButtonState(id,ready){
