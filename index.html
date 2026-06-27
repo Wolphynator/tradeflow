@@ -1186,7 +1186,7 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
     </div>
     <div class="inv-form-section">
       <div class="inv-form-label">Description</div>
-      <textarea class="client-line-input client-note" id="inv-item-desc" maxlength="2000" placeholder="Add Notes" style="min-height:220px;height:calc(100vh - 520px)"></textarea>
+      <textarea class="client-line-input client-note" id="inv-item-desc" maxlength="1000" placeholder="Add Notes" style="min-height:220px;height:calc(100vh - 520px)"></textarea>
     </div>
   </div>
 </div>
@@ -7073,7 +7073,7 @@ const INPUT_LIMITS={
   unit:10,
   address:140,
   // Long-form fields need room for detailed scope of works while still blocking runaway paste/data abuse.
-  description:12000,
+  description:1000,
   notes:8000
 };
 
