@@ -49,7 +49,7 @@ button[style*="background:var(--bg)"],button[style*="background: var(--bg)"]{
 .nav-text-btn,.biz-edit-action.save,.bottom-action-btn,.cl-filter.on,.new-inv-row .add-link{
   background:var(--btn-grad)!important;color:white!important;border:1px solid rgba(255,255,255,.16)!important;box-shadow:var(--btn-green-shadow)!important
 }
-.biz-edit-action.cancel,.btn-s,.cal-month-label,.cl-filter:not(.on),.inv-add-box{
+.btn-s,.cal-month-label,.cl-filter:not(.on),.inv-add-box{
   background:var(--btn-soft-grad)!important;border:1px solid var(--border)!important;box-shadow:var(--btn-shadow)!important
 }
 .nav-text-btn,.biz-edit-action,.cal-nav-btn,.cal-jump-btn,.cal-month-label,.add-btn-dash,.inv-add-box,.new-inv-row .add-link,.cl-filter{
@@ -93,7 +93,7 @@ button[style*="background:var(--bg)"],button[style*="background: var(--bg)"]{
 .n-dot{position:absolute;top:4px;right:4px;width:7px;height:7px;border-radius:50%;background:var(--accent);border:1.5px solid var(--brand)}
 .biz-edit-nav{display:grid;grid-template-columns:74px minmax(0,1fr) 74px;align-items:end;gap:8px;padding:0 12px 10px}
 .biz-edit-action{height:36px;border:none;border-radius:18px;background:rgba(255,255,255,.14);color:white;font-size:13px;font-weight:800;cursor:pointer}
-.biz-edit-action.cancel{background:rgba(255,255,255,.12);color:rgba(255,255,255,.95)}
+.biz-edit-action.cancel{background:rgba(255,255,255,.18)!important;color:#fff!important;border:1.5px solid rgba(255,255,255,.45)!important;box-shadow:none!important}
 .biz-edit-action.save{background:rgba(255,255,255,.2)}
 .biz-edit-heading{text-align:center;min-width:0}
 .biz-edit-heading .nav-title{font-size:17px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -7296,11 +7296,19 @@ async function saveDocumentToSupabase(doc,type){
   const client=getCurrentDocClient();
   const stripHtml=s=>s?s.replace(/<br\s*\/?>/gi,'\n').replace(/<[^>]+>/g,'').trim():null;
   const clientAddr=client?[client.address_line1,client.address_line2,[client.city,client.state,client.zip].filter(Boolean).join(' ')].filter(Boolean).join(', '):null;
+  const fromAddr=[currentBusiness?.address_line1,currentBusiness?.address_line2,currentBusiness?.city,currentBusiness?.zip].filter(Boolean).join('\n');
+  const bizFields={
+    from_name:currentBusiness?.trading_name||currentBusiness?.name||'',
+    from_address:fromAddr,
+    from_phone:currentBusiness?.phone||'',
+    from_email:currentBusiness?.email||'',
+    logo_data:companyLogo||''
+  };
   try{
     if(type==='estimate'){
       const rec={business_id:currentBusiness.id,number:doc.id||'EST-000001',client_name:doc.client||'Client',
         client_email:client?.email||null,client_address:clientAddr,scope:doc.notes||null,
-        subtotal:Number(doc.subtotal)||0,total:Number(doc.total)||0,notes:doc.notes||null,status:'Sent'};
+        subtotal:Number(doc.subtotal)||0,total:Number(doc.total)||0,notes:doc.notes||null,status:'Sent',...bizFields};
       const{data,error}=await sb.from('estimates').insert(rec).select('share_token,id').single();
       if(error||!data) return null;
       if(doc.lines?.length){
@@ -7321,7 +7329,7 @@ async function saveDocumentToSupabase(doc,type){
         client_email:client?.email||null,client_address:stripHtml(doc.clientAddr),
         subtotal,tax_amount:(Number(doc.vat)||0)+(Number(doc.tax)||0),
         total:Number(doc.total)||0,balance_due:Number(doc.balanceDue||doc.total)||0,
-        notes:doc.notes||null,terms:doc.terms||null,issue_date:parseDateGB(doc.date),status:'Sent'};
+        notes:doc.notes||null,terms:doc.terms||null,issue_date:parseDateGB(doc.date),status:'Sent',...bizFields};
       const{data,error}=await sb.from('invoices').insert(rec).select('share_token,id').single();
       if(error||!data) return null;
       if(doc.lines?.length){
