@@ -7831,7 +7831,7 @@ async function checkViewerMode(){
       appEl.style.display='none';
       root.style.cssText=VIEWER_CSS;
       // Mark viewed in Supabase (fire-and-forget)
-      sb.rpc(isEstToken?'mark_estimate_viewed':'mark_invoice_viewed',{p_token:token}).catch(()=>{});
+      (async()=>{try{await sb.rpc(isEstToken?'mark_estimate_viewed':'mark_invoice_viewed',{p_token:token});}catch(e){}})();
       if(viewerDoc.topic) setTimeout(()=>notifyContractor(viewerDoc,'opened'),600);
       return true;
     }catch(e){
