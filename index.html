@@ -7314,7 +7314,7 @@ function parseDateGB(s){
 
 async function saveDocumentToSupabase(doc,type){
   if(!currentBusiness?.id||!doc) return null;
-  if(doc.shareToken) return doc.shareToken;
+  if(doc.shareToken||doc.share_token) return doc.shareToken||doc.share_token;
   const client=getCurrentDocClient();
   const stripHtml=s=>s?s.replace(/<br\s*\/?>/gi,'\n').replace(/<[^>]+>/g,'').trim():null;
   const clientAddr=client?[client.address_line1,client.address_line2,[client.city,client.state,client.zip].filter(Boolean).join(' ')].filter(Boolean).join(', '):null;
@@ -7406,7 +7406,7 @@ async function generateShareLink(type){
   const docType=type||currentDetailType||'invoice';
   if(typeof sb!=='undefined'&&currentBusiness?.id){
     try{
-      const token=await saveDocumentToSupabase(doc,docType);
+      const token=doc.share_token||await saveDocumentToSupabase(doc,docType);
       if(token){
         const prefix=docType==='estimate'?'est-':'inv-';
         if(docType==='invoice') markInvoiceSentLocal(doc);
