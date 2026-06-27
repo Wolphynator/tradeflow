@@ -781,8 +781,6 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
     <div id="home-recent-jobs" style="margin-bottom:14px"></div>
     <div class="sh"><span class="sh-t">Today's Schedule</span><button class="sh-a" type="button" onclick="goTo('screen-schedule')">Full calendar</button></div>
     <div id="home-today-schedule" style="margin-bottom:14px"></div>
-    <div class="sh"><span class="sh-t">Recent Activity</span></div>
-    <div id="home-activity"></div>
   </div>
   <div class="bot-nav">
     <div class="bn" onclick="goTo('screen-home')"><div class="bn-ic on" data-en-text="🏠">🏠</div><div class="bn-lb on" data-en-text="Home">Home</div></div>
@@ -2359,7 +2357,6 @@ function goTo(id){
   if(id==='screen-schedule') renderSchedule();
   if(id==='screen-estimates'){renderEstimateList();if(currentUser)loadEstimates().catch(()=>{});}
   if(id==='screen-invoices'&&currentUser) loadInvoices().catch(()=>{});
-  if(id==='screen-home'&&currentUser) loadHomeActivity();
   if(id==='screen-notifications') loadNotifications();
   // close inv fab if open
   if(invFabOpen) toggleInvFAB();
@@ -7335,7 +7332,7 @@ function transformShareViewData(data){
   return{
     type,id:doc.number,client:doc.client_name,
     clientAddr:(doc.client_address||'').replace(/\n/g,'<br>'),
-    from:biz?.name||'TradeFlow',fromLine2:'',fromAddr:biz?.address||'',
+    from:biz?.name||'TradeFlowPro',fromLine2:'',fromAddr:biz?.address||'',
     fromPhone:biz?.phone||'',fromEmail:biz?.email||'',logo:biz?.logo_url||'',
     date:dateText,
     terms:terms||(!isInv?defaultEstimateTerms():''),dueDate,validUntil,notes:doc.notes||'',scope:doc.scope||doc.notes||'',
