@@ -1832,11 +1832,17 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
         <button onclick="copyFallbackField('efm-body','Message')" style="background:var(--brand);color:white;border:none;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:600;cursor:pointer;flex-shrink:0">Copy</button>
       </div>
     </div>
-    <button id="efm-send-btn" style="width:100%;background:var(--brand);color:white;border:1px solid var(--brand);border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px" onclick="openMailtoEmail()">Send by Email</button>
+    <button id="efm-send-btn" style="width:100%;background:var(--brand);color:white;border:1px solid var(--brand);border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px" onclick="sendViaEdgeFunction()">Send by Email</button>
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
       <div style="flex:1;height:1px;background:var(--border)"></div>
-      <span style="font-size:11px;color:var(--muted);font-weight:600">OR USE YOUR APP</span>
+      <span style="font-size:11px;color:var(--muted);font-weight:600">OR OPEN IN YOUR EMAIL APP</span>
       <div style="flex:1;height:1px;background:var(--border)"></div>
+    </div>
+    <div id="efm-client-btns" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+      <button style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 8px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px" onclick="openInEmailClient('gmail')"><img src="https://www.google.com/favicon.ico" style="width:16px;height:16px;border-radius:3px" onerror="this.style.display='none'">Gmail</button>
+      <button style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 8px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px" onclick="openInEmailClient('yahoo')"><img src="https://www.yahoo.com/favicon.ico" style="width:16px;height:16px;border-radius:3px" onerror="this.style.display='none'">Yahoo</button>
+      <button style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 8px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px" onclick="openInEmailClient('outlook')"><img src="https://outlook.live.com/favicon.ico" style="width:16px;height:16px;border-radius:3px" onerror="this.style.display='none'">Outlook</button>
+      <button style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 8px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px" onclick="openInEmailClient('mailto')">✉️ Default App</button>
     </div>
     <button id="efm-open-btn" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px" onclick="shareEmailFromFallback()">Share Link</button>
     <button id="efm-mailto-btn" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px" onclick="openWhatsAppFromFallback()">Send by WhatsApp</button>
@@ -7411,11 +7417,60 @@ function openMailtoEmail(){
   a.remove();
 }
 
+function openInEmailClient(provider){
+  const email=document.getElementById('efm-email')?.value.trim()||'';
+  const subject=document.getElementById('efm-subject')?.value||'';
+  const body=document.getElementById('efm-body')?.value||'';
+  if(!isShareMessageReady(body)){showManageToast('Link is still generating');return;}
+  const to=encodeURIComponent(email);
+  const su=encodeURIComponent(subject);
+  const bo=encodeURIComponent(body);
+  let url;
+  if(provider==='gmail'){
+    url=`https://mail.google.com/mail/?view=cm&to=${to}&su=${su}&body=${bo}`;
+  }else if(provider==='yahoo'){
+    url=`https://compose.mail.yahoo.com/?to=${to}&subject=${su}&body=${bo}`;
+  }else if(provider==='outlook'){
+    url=`https://outlook.live.com/mail/0/deeplink/compose?to=${to}&subject=${su}&body=${bo}`;
+  }else{
+    const a=document.createElement('a');
+    a.href=`mailto:${to}?subject=${su}&body=${bo}`;
+    a.rel='noopener';document.body.appendChild(a);a.click();a.remove();
+    return;
+  }
+  window.open(url,'_blank','noopener');
+}
+
+async function sendViaEdgeFunction(){
+  if(!_pendingEmail||!isShareMessageReady(_pendingEmail.bodyText)){
+    showManageToast('Link is still generating');return;
+  }
+  const btn=document.getElementById('efm-send-btn');
+  if(btn){btn.textContent='Sending…';btn.disabled=true;btn.style.opacity='.7';}
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    if(!session) throw new Error('Not signed in');
+    const res=await fetch(SUPABASE_URL+'/functions/v1/send-invoice-email',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
+      body:JSON.stringify(_pendingEmail)
+    });
+    const json=await res.json();
+    if(!res.ok) throw new Error(json.error||'Send failed');
+    showManageToast('Email sent to '+_pendingEmail.to);
+    closeEmailFallback();
+  }catch(e){
+    showManageToast('Failed to send: '+e.message);
+    if(btn){btn.textContent='Send by Email';btn.disabled=false;btn.style.opacity='1';}
+  }
+}
+
 function closeEmailFallback(){
   document.getElementById('email-fallback-modal').classList.remove('open');
   _pendingEmail=null;
   const btn=document.getElementById('efm-send-btn');
   if(btn){btn.textContent='Send by Email';btn.style.background='var(--brand)';btn.disabled=false;btn.style.opacity='1';}
+  document.getElementById('efm-client-btns')?.querySelectorAll('button').forEach(b=>{b.disabled=false;b.style.opacity='1';});
 }
 
 function closeSmsFallback(){
@@ -7515,7 +7570,7 @@ async function doEmailAction(){
   document.getElementById('efm-email').value=email;
   document.getElementById('efm-subject').value=subject;
   document.getElementById('efm-body').value='Generating secure link…';
-  setSendButtonsReady(['efm-send-btn','efm-open-btn','efm-mailto-btn'],false);
+  setSendButtonsReady(['efm-send-btn','efm-open-btn','efm-mailto-btn'],false);document.getElementById('efm-client-btns')?.querySelectorAll('button').forEach(b=>{b.disabled=true;b.style.opacity='.5';});
   document.getElementById('email-fallback-modal').classList.add('open');
   const link=await generateShareLink(currentDetailType||'invoice');
   const isEstimateDoc=currentDetailType==='estimate';
@@ -7538,7 +7593,7 @@ async function doEmailAction(){
       +'Kind regards,\n'+bizName;
   document.getElementById('efm-body').value=bodyText;
   _pendingEmail={to:email,subject,bodyText,fromName:bizName,link,clientFirst,docType,docId,total};
-  setSendButtonsReady(['efm-send-btn','efm-open-btn','efm-mailto-btn'],true);
+  setSendButtonsReady(['efm-send-btn','efm-open-btn','efm-mailto-btn'],true);document.getElementById('efm-client-btns')?.querySelectorAll('button').forEach(b=>{b.disabled=false;b.style.opacity='1';});
 }
 
 
@@ -7586,10 +7641,18 @@ async function checkViewerMode(){
     const token=val.slice(4);
     if(token.length<32) return false;
     const docType=isEstToken?'estimate':'invoice';
+    const rpcName=isEstToken?'get_estimate_by_share_token':'get_invoice_by_share_token';
+    const docKey=isEstToken?'estimate':'invoice';
     try{
-      const{data,error}=await sb.rpc('get_share_view',{p_token:token,p_type:docType});
+      const{data,error}=await sb.rpc(rpcName,{p_token:token});
       if(error||!data) return false;
-      const viewerDoc=transformShareViewData(data);
+      const raw=data[docKey];
+      if(!raw) return false;
+      const shaped={
+        doc:raw,type:docType,lines:data.lines||[],
+        biz:{name:raw.from_name||'',address:raw.from_address||'',phone:raw.from_phone||'',email:raw.from_email||'',logo_url:raw.logo_data||''}
+      };
+      const viewerDoc=transformShareViewData(shaped);
       _viewerDoc=viewerDoc;
       renderClientViewer(viewerDoc);
       appEl.style.display='none';
