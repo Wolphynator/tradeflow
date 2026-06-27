@@ -1214,6 +1214,7 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
     <div class="inv-form-section">
       <div class="inv-form-label">Total</div>
       <div class="new-inv-row new-inv-total"><span>Line total</span><span id="inv-item-total">0.00</span></div>
+      <div id="inv-item-hourly-breakdown" style="display:none;font-size:12px;color:var(--muted);margin-top:4px;padding:0 2px"></div>
     </div>
     <div class="inv-form-section">
       <div class="inv-form-label">Description</div>
@@ -5870,6 +5871,7 @@ function setLinePricingMode(mode){
   if(rateLabel) rateLabel.textContent=linePricingMode==='hourly'?'Hourly Rate':'Unit Price';
   if(qtyInput) qtyInput.placeholder=linePricingMode==='hourly'?'Hours worked':'Quantity';
   if(rateInput) rateInput.placeholder=linePricingMode==='hourly'?'Hourly rate':'Unit Price';
+  updateInvoiceItemPreview();
 }
 
 function checkItemDescLimit(el){
@@ -5898,6 +5900,16 @@ function updateInvoiceItemPreview(){
   const entered=parseFloat(document.getElementById('inv-item-rate')?.value)||0;
   const unitPrice=displayToBase(entered);
   setText('#inv-item-total',money(qty*unitPrice));
+  const breakdown=document.getElementById('inv-item-hourly-breakdown');
+  if(breakdown){
+    if(linePricingMode==='hourly'&&qty>0&&entered>0){
+      const hrs=qty===1?'1 hr':qty+' hrs';
+      breakdown.textContent=hrs+' × '+money(unitPrice)+'/hr';
+      breakdown.style.display='block';
+    }else{
+      breakdown.style.display='none';
+    }
+  }
 }
 
 function saveInvoiceItem(){
