@@ -5230,6 +5230,7 @@ async function saveCO(){
   _currentCO.total=_currentCO.lines.reduce((s,l)=>s+(l.qty*l.unitPrice),0);
   if(!currentDetailDoc.changeOrders) currentDetailDoc.changeOrders=[];
   if(_editingCOIndex>=0) currentDetailDoc.changeOrders[_editingCOIndex]=_currentCO;
+  else if(currentDetailDoc.changeOrders.length>=10){showManageToast('Maximum 10 change orders per document reached');closeCOModal();return;}
   else currentDetailDoc.changeOrders.push(_currentCO);
   persistCurrentDetailDoc();
   renderDocumentCOs(currentDetailDoc);
