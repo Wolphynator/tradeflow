@@ -904,7 +904,7 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
         <div class="det-stat"><div class="ds-l">Type</div><div class="ds-v" id="schedule-detail-type">—</div></div>
         <div class="det-stat"><div class="ds-l">Status</div><div class="ds-v" id="schedule-detail-status">—</div></div>
       </div>
-      <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);font-size:13px;margin-bottom:8px"><span style="color:var(--muted)">Linked To</span><span id="schedule-detail-link" style="font-weight:600;text-align:right">—</span></div>
+      <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);font-size:13px;margin-bottom:8px"><span style="color:var(--muted)">Created from</span><span id="schedule-detail-link" style="font-weight:600;text-align:right">—</span></div>
       <div class="sh"><span class="sh-t">Notes</span></div>
       <div class="card" style="padding:14px 16px;margin-bottom:14px">
         <div id="schedule-detail-note" style="font-size:13px;line-height:1.5;color:var(--text)">No notes added.</div>
@@ -3069,7 +3069,7 @@ function openScheduleDetail(index){
   setText('#schedule-detail-time',t.main+' '+t.suffix);
   setText('#schedule-detail-type',type);
   setText('#schedule-detail-status',item.status||'Booked');
-  setText('#schedule-detail-link',item.sourceInvoiceId||item.sourceEstimateId||'Manual');
+  setText('#schedule-detail-link',item.sourceInvoiceId||item.sourceEstimateId||'Schedule (manual)');
   setText('#schedule-detail-note',item.note||'No notes added.');
   const actions=document.getElementById('schedule-detail-actions');
   if(actions){
