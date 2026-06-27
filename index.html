@@ -1804,7 +1804,7 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
       <div style="flex:1;height:1px;background:var(--border)"></div>
     </div>
     <button id="efm-open-btn" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px" onclick="shareEmailFromFallback()">Share Link</button>
-    <button id="efm-mailto-btn" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px" onclick="openEmailAppFromFallback()">Open Email App</button>
+    <button id="efm-mailto-btn" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px" onclick="openWhatsAppFromFallback()">Send by WhatsApp</button>
     <button style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:14px;font-weight:600;cursor:pointer" onclick="closeEmailFallback()">Close</button>
   </div>
 </div>
@@ -7264,19 +7264,13 @@ function shareSMSFromFallback(){
   shareTextWithApps('TradeFlow document',msg);
 }
 
-function openEmailAppFromFallback(){
-  const email=document.getElementById('efm-email')?.value.trim();
-  const subject=document.getElementById('efm-subject')?.value||'';
+function openWhatsAppFromFallback(){
   const body=document.getElementById('efm-body')?.value||'';
-  if(!email||!isShareMessageReady(body)){showManageToast('Link is still generating');return;}
-  const href='mailto:'+email.replace(/\s/g,'')+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
-  const a=document.createElement('a');
-  a.href=href;
-  a.target='_blank';
-  a.rel='noopener';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
+  if(!isShareMessageReady(body)){showManageToast('Link is still generating');return;}
+  const client=getCurrentDocClient();
+  const rawPhone=(client?.mobile||client?.home_phone||'').replace(/[^\d+]/g,'');
+  const url='https://wa.me/'+(rawPhone||'')+'?text='+encodeURIComponent(body);
+  window.open(url,'_blank','noopener');
 }
 
 function smsPhoneTarget(phone){
