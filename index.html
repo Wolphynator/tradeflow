@@ -1857,8 +1857,7 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
         <button onclick="copyFallbackField('sfm-msg','Message')" style="background:var(--brand);color:white;border:none;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:600;cursor:pointer;flex-shrink:0">Copy</button>
       </div>
     </div>
-    <button id="sfm-open-btn" style="width:100%;background:var(--brand);color:white;border:1px solid var(--brand);border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px" onclick="shareSMSFromFallback()">Share Link</button>
-    <button id="sfm-sms-btn" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px" onclick="openSMSAppFromFallback()">Send by Message</button>
+    <button id="sfm-sms-btn" style="width:100%;background:var(--brand);color:white;border:1px solid var(--brand);border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px" onclick="openSMSAppFromFallback()">Send by Message</button>
     <button style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:14px;font-weight:600;cursor:pointer" onclick="closeSmsFallback()">Close</button>
   </div>
 </div>
@@ -7529,12 +7528,12 @@ async function doSMSAction(){
   document.getElementById('sfm-title').textContent='Share '+docLabel+' by SMS';
   document.getElementById('sfm-phone').value=phone;
   document.getElementById('sfm-msg').value='Generating secure link…';
-  setSendButtonsReady(['sfm-open-btn','sfm-sms-btn'],false);
+  setSendButtonsReady(['sfm-sms-btn'],false);
   document.getElementById('sms-fallback-modal').classList.add('open');
   const link=await generateShareLink(currentDetailType||'invoice');
   const msg=greeting+'here is your '+docType+' ('+docId+') from '+bizName+':\n'+link;
   document.getElementById('sfm-msg').value=msg;
-  setSendButtonsReady(['sfm-open-btn','sfm-sms-btn'],true);
+  setSendButtonsReady(['sfm-sms-btn'],true);
 }
 
 // ── Client viewer ──
