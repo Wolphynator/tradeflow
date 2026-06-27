@@ -5575,8 +5575,11 @@ async function savePayment(){
   const amountEl=document.getElementById('payment-amount-input');
   sanitizeNumericField(amountEl);
   const entered=parseFloat(amountEl.value);
-  if(!entered||entered<=0){showManageToast('Payment amount required');return;}
-  if(entered>9999999){showManageToast('Amount too large — max £9,999,999');return;}
+  if(!entered||entered<=0){
+    const errEl=document.getElementById('payment-amount-error');
+    if(errEl){errEl.textContent='Please enter a valid payment amount.';errEl.style.display='block';}
+    return;
+  }
   const inv=invoices[currentInvoiceIndex];
   if(!inv||!inv._id){showManageToast('Invoice not found');return;}
   if(invoiceDisplayStatus(inv)==='Paid'){
