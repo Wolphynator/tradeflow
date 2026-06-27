@@ -1298,7 +1298,7 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
       </div>
       <div style="margin:4px 0 12px">
         <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Notes (optional)</div>
-        <textarea id="co-notes" placeholder="Any notes for this change order…" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:10px;font-size:13px;background:var(--bg);color:var(--text);resize:none;height:64px;box-sizing:border-box"></textarea>
+        <textarea id="co-notes" placeholder="Any notes for this change order…" maxlength="200" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:10px;font-size:13px;background:var(--bg);color:var(--text);resize:none;height:64px;box-sizing:border-box"></textarea>
       </div>
       <div id="co-total-display" class="co-money" style="text-align:right;font-size:13px;padding-bottom:8px"></div>
     </div>
@@ -5153,6 +5153,7 @@ function openChangeOrders(){
 }
 
 function addCOLine(){
+  if(_currentCO&&_currentCO.lines.length>=5){showManageToast('Maximum 5 items per change order reached');return;}
   lineEditorMode='co';
   editingCOLineIndex=-1;
   setLinePricingMode('fixed');
