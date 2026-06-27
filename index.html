@@ -144,6 +144,10 @@ button[style*="background:var(--bg)"],button[style*="background: var(--bg)"]{
 /*  Job Row  */
 .job-row{display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid var(--border);cursor:pointer;background:var(--surface);transition:background .1s}
 .job-row:last-child{border-bottom:none}
+.recent-jobs-carousel{height:256px;overflow-y:scroll;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;border-radius:14px;border:1px solid var(--border);background:var(--surface);position:relative}
+.recent-jobs-carousel::-webkit-scrollbar{display:none}
+.recent-jobs-carousel .job-row{scroll-snap-align:start}
+.recent-jobs-more{position:absolute;bottom:0;left:0;right:0;height:32px;background:linear-gradient(to bottom,transparent,var(--surface));border-radius:0 0 14px 14px;pointer-events:none}
 .job-row:active{background:var(--bg)}
 .jdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .jdot.active{background:var(--success)}.jdot.sched{background:#3b82f6}.jdot.pend{background:var(--accent)}.jdot.over{background:var(--danger)}
@@ -4128,8 +4132,7 @@ function renderHomeScreen(){
       ];
       const dotMap={Paid:'active',Sent:'sched',Viewed:'pend',Overdue:'over',Draft:'draft'};
       const pillMap={Paid:'paid',Sent:'sched',Viewed:'pend',Overdue:'over',Draft:'draft'};
-      jobsEl.innerHTML='<div class="card" style="margin-bottom:0">'+invoices.slice(0,4).map((inv,i)=>{
-        const c=avColors[i%avColors.length];
+      const rows=invoices.map((inv,i)=>{
         const status=invoiceDisplayStatus(inv);
         const dot=dotMap[status]||'pend';
         const pill=pillMap[status]||'draft';
@@ -4139,7 +4142,12 @@ function renderHomeScreen(){
           '<div class="jc">'+esc(inv.client||'')+'</div></div>'+
           '<div class="jr"><div class="ja">'+money(inv.total||0)+'</div>'+
           '<div class="pill '+pill+'">'+esc(status)+'</div></div></div>';
-      }).join('')+'</div>';
+      }).join('');
+      const useCarousel=invoices.length>4;
+      const wrapper=useCarousel
+        ?'<div class="recent-jobs-carousel">'+rows+'<div class="recent-jobs-more"></div></div>'
+        :'<div class="card" style="margin-bottom:0">'+rows+'</div>';
+      jobsEl.innerHTML=wrapper;
     }
   }
   const schedEl=document.getElementById('home-today-schedule');
