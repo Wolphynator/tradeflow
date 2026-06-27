@@ -2283,6 +2283,7 @@ function openEstimateDetail(index){
     else{notesSection.style.display='none';notesEl.textContent='';}
   }
   setDetailNavTab('estimate');
+  invoicePayments=[];
   renderDetailTotals(est,0,est.balanceDue??Math.max(0,(est.total||0)-(est.deposit||0)));
   renderDocumentCOs(est);
   renderPayments();
