@@ -5740,6 +5740,7 @@ async function _executeInvoiceClientInsert(obj){
 }
 
 function addInvoiceLine(){
+  if(newInvoice.lines.length>=50){showManageToast('Maximum 50 items per invoice reached');return;}
   lineEditorMode='invoice';
   editingInvoiceLineIndex=-1;
   setLinePricingMode('fixed');
@@ -5768,6 +5769,7 @@ function editInvoiceLine(index){
 }
 
 function addEstimateLine(){
+  if(newEstimate.lines.length>=50){showManageToast('Maximum 50 items per estimate reached');return;}
   lineEditorMode='estimate';
   editingEstimateLineIndex=-1;
   setLinePricingMode('fixed');
