@@ -7398,7 +7398,7 @@ function transformShareViewData(data){
     subtotal:doc.subtotal!=null?money(Number(doc.subtotal)):null,
     tax:doc.tax_amount?money(Number(doc.tax_amount)):null,
     total:money(Number(doc.total)||0),balanceDue:money(Number(doc.balance_due||doc.total)||0),
-    shareToken:doc.share_token,_supabaseType:type,topic:null
+    shareToken:doc.share_token,_supabaseType:type,topic:data?.ntfy_topic||null
   };
 }
 
@@ -8038,13 +8038,17 @@ async function notifyContractor(doc, event){
   const t=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
   const titles={
     opened:'TradeFlow: '+label+' Viewed',
-    signed:'TradeFlow: '+label+' Signed ✓'
+    signed:'TradeFlow: '+label+' Signed ✓',
+    declined:'TradeFlow: '+label+' Declined ✗',
+    queried:'TradeFlow: Client Query on '+label
   };
   const bodies={
     opened:(doc.client||'Client')+' opened '+label+' '+doc.id+' · '+t,
-    signed:(doc.client||'Client')+' signed and accepted '+label+' '+doc.id+' · '+t
+    signed:(doc.client||'Client')+' signed and accepted '+label+' '+doc.id+' · '+t,
+    declined:(doc.client||'Client')+' declined '+label+' '+doc.id+' · '+t,
+    queried:(doc.client||'Client')+' sent a query on '+label+' '+doc.id+' · '+t
   };
-  const tags={opened:'eyes',signed:'white_check_mark'};
+  const tags={opened:'eyes',signed:'white_check_mark',declined:'x',queried:'speech_balloon'};
   try{
     await fetch('https://ntfy.sh/'+doc.topic,{
       method:'POST',
@@ -8175,11 +8179,12 @@ async function submitDecline(){
   const btn=document.querySelector('.vw-action-submit.decline');
   if(btn){btn.disabled=true;btn.textContent='Declining...';}
   if(doc?.shareToken){
-    const{error}=await sb.rpc('decline_estimate',{p_token:doc.shareToken,p_reason:_vwDeclineReason,p_comment:comment||null});
+    const{data:rpcData,error}=await sb.rpc('decline_estimate',{p_token:doc.shareToken,p_reason:_vwDeclineReason,p_comment:comment||null});
     if(error&&!error.message?.includes('already')){
       if(btn){btn.disabled=false;btn.textContent='Decline Estimate';}
       return;
     }
+    notifyContractor({...doc,topic:doc.topic||rpcData?.ntfy_topic},'declined').catch(()=>{});
   }
   const area=document.getElementById('vw-action-area');
   if(area) area.innerHTML='<div class="vw-done-card declined"><div class="vw-done-icon">&#10007;</div><div class="vw-done-title" style="color:#dc2626">Estimate Declined</div><div class="vw-done-notice" style="color:#dc2626">'+(doc?.from||'The contractor')+' has been notified.</div></div>';
@@ -8196,11 +8201,12 @@ async function submitQuery(){
   const btn=document.querySelector('.vw-action-submit.query');
   if(btn){btn.disabled=true;btn.textContent='Sending...';}
   if(doc?.shareToken){
-    const{error}=await sb.rpc('query_document',{p_token:doc.shareToken,p_doc_type:doc.type||'estimate',p_message:msg,p_client_name:doc.client||null});
+    const{data:rpcData,error}=await sb.rpc('query_document',{p_token:doc.shareToken,p_doc_type:doc.type||'estimate',p_message:msg,p_client_name:doc.client||null});
     if(error){
       if(btn){btn.disabled=false;btn.textContent='Send Query';}
       return;
     }
+    notifyContractor({...doc,topic:doc.topic||rpcData?.ntfy_topic},'queried').catch(()=>{});
   }
   const area=document.getElementById('vw-action-area');
   if(area) area.innerHTML='<div class="vw-done-card queried"><div class="vw-done-icon">&#10003;</div><div class="vw-done-title" style="color:#b45309">Query Sent</div><div class="vw-done-notice" style="color:#b45309">'+(doc?.from||'The contractor')+' has been notified of your query.</div></div>';
@@ -8232,10 +8238,11 @@ async function submitSignature(){
   if(pdfBtn){pdfBtn.innerHTML='&#128196; Download Signed PDF';pdfBtn.style.background='var(--brand)';pdfBtn.style.color='white';}
   // Sign via Supabase for token-backed estimate links
   if(doc?.shareToken&&doc?.type==='estimate'){
-    sb.rpc('sign_estimate',{p_token:doc.shareToken,p_signature:sigDataUrl,p_signed_by:doc.client||'Client'}).catch(()=>{});
+    const{data:rpcData}=await sb.rpc('sign_estimate',{p_token:doc.shareToken,p_signature:sigDataUrl,p_signed_by:doc.client||'Client'}).catch(()=>({}));
+    notifyContractor({...doc,topic:doc.topic||rpcData?.ntfy_topic},'signed').catch(()=>{});
+  } else if(doc&&doc.topic){
+    await notifyContractor(doc,'signed');
   }
-  // ntfy.sh notification for legacy base64 links that carry a topic
-  if(doc&&doc.topic) await notifyContractor(doc,'signed');
 }
 
 // ── PDF download ──
