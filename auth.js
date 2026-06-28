@@ -605,6 +605,24 @@ async function initAuth() {
   bindAuthValidation();
   resetAuthButtons();
 
+  // Expired / invalid auth link — show sign-in with a message
+  if (window._authLinkError) {
+    window._authLinkError = false;
+    goTo('screen-signin');
+    setTimeout(() => showAuthError('signin-error', 'That link has expired. Enter your email and request a new password reset.'), 100);
+    sb.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        currentUser = null; currentBusiness = null;
+        window.currentUser = null; window.currentBusiness = null;
+        try { resetLocalSessionData(); } catch(e) {}
+        resetAuthButtons(); hist.length = 0; hist.push('screen-signin'); goTo('screen-signin');
+      }
+    });
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) await onLoginSuccess(session.user);
+    return;
+  }
+
   // supabase.js sets this flag BEFORE createClient() clears the hash
   if (window._isRecoveryUrl) {
     window._isRecoveryUrl = false;
