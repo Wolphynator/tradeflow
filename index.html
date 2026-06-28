@@ -7902,7 +7902,7 @@ async function checkViewerMode(){
       root.style.cssText=VIEWER_CSS;
       // Mark viewed in Supabase (fire-and-forget)
       (async()=>{try{await sb.rpc(isEstToken?'mark_estimate_viewed':'mark_invoice_viewed',{p_token:token});}catch(e){}})();
-      if(viewerDoc.topic) setTimeout(()=>notifyContractor(viewerDoc,'opened'),600);
+      if(viewerDoc.shareToken&&!viewerDoc.isOwnerPreview) setTimeout(()=>notifyContractor(viewerDoc,'opened'),600);
       return true;
     }catch(e){
       console.error('[viewer] checkViewerMode error:',e);
