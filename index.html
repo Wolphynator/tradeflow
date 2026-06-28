@@ -8309,17 +8309,12 @@ function vwSelectReason(el){
 }
 
 async function submitDecline(){
-  if(!_vwDeclineReason){
-    const r=document.querySelector('.vw-decline-reasons');
-    if(r){r.style.outline='2px solid #dc2626';setTimeout(()=>r.style.outline='',1400);}
-    return;
-  }
   const doc=_viewerDoc;
   const comment=(document.getElementById('vw-decline-comment')?.value||'').trim();
   const btn=document.querySelector('.vw-action-submit.decline');
   if(btn){btn.disabled=true;btn.textContent='Declining...';}
   if(doc?.shareToken){
-    const{data:rpcData,error}=await sb.rpc('decline_estimate',{p_token:doc.shareToken,p_reason:_vwDeclineReason,p_comment:comment||null});
+    const{data:rpcData,error}=await sb.rpc('decline_estimate',{p_token:doc.shareToken,p_reason:_vwDeclineReason||null,p_comment:comment||null});
     if(error&&!error.message?.includes('already')){
       if(btn){btn.disabled=false;btn.textContent='Decline Estimate';}
       return;
