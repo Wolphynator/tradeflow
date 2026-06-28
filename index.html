@@ -1866,7 +1866,7 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
         <label for="account-current-email">Current email</label>
         <input class="account-input" id="account-current-email" type="email" readonly>
       </div>
-      <button class="account-secondary-btn" type="button" onclick="sendAccountPasswordReset()">Send Password Reset Link</button>
+      <button class="account-secondary-btn" id="btn-pw-reset" type="button" onclick="sendAccountPasswordReset()">Send Password Reset Link</button>
       <div class="account-help">Your password changes only after you confirm the reset from your email. It does not delete or reset app data.</div>
       <div class="account-field" style="margin-top:12px">
         <label for="account-new-email">Change email</label>
@@ -3619,20 +3619,41 @@ async function saveAccountSecurity(){
   return true;
 }
 
+let _pwResetCooldownTimer=null;
 async function sendAccountPasswordReset(){
+  const btn=document.getElementById('btn-pw-reset');
+  if(btn?.disabled) return;
   const email=currentUser?.email;
   if(!email){showManageToast('No email address found');return;}
   if(!(typeof sb!=='undefined'&&sb.auth?.resetPasswordForEmail)){
     showManageToast('Password reset is unavailable here');
     return;
   }
+  if(btn){btn.disabled=true;btn.textContent='Sending…';}
   const redirectTo=window.location.origin&&window.location.origin!=='null'
     ?window.location.origin+window.location.pathname
     :undefined;
   const options=redirectTo?{redirectTo}:{};
   const {error}=await sb.auth.resetPasswordForEmail(email,options);
-  if(error){showManageToast('Could not send reset email');return;}
-  showManageToast('Password reset sent');
+  if(error){
+    showManageToast('Could not send reset email');
+    if(btn){btn.disabled=false;btn.textContent='Send Password Reset Link';}
+    return;
+  }
+  showManageToast('Reset link sent — check your email');
+  // 60-second cooldown with countdown
+  let secs=60;
+  if(btn) btn.textContent='Resend in '+secs+'s';
+  clearInterval(_pwResetCooldownTimer);
+  _pwResetCooldownTimer=setInterval(()=>{
+    secs--;
+    if(secs<=0){
+      clearInterval(_pwResetCooldownTimer);
+      if(btn){btn.disabled=false;btn.textContent='Send Password Reset Link';}
+    } else {
+      if(btn) btn.textContent='Resend in '+secs+'s';
+    }
+  },1000);
 }
 
 function openBizProfile(){
