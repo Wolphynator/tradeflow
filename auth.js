@@ -489,6 +489,7 @@ async function loadBusinessRecord(user) {
   }
   applyBusinessPreferences();
   if(typeof window.initCompanyProfiles==='function') window.initCompanyProfiles();
+  if(typeof window.subscribeToPush==='function') window.subscribeToPush();
 }
 
 function applyBusinessPreferences() {

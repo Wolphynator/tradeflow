@@ -8032,8 +8032,34 @@ function renderViewerEstimateLines(doc){
     doc.lines.map(l=>`<div class="inv-line-item"><div class="inv-li-name">${esc(l.name)}</div>${l.meta?'<div class="inv-li-desc">'+esc(l.meta)+'</div>':''}<div class="inv-li-total">${esc(l.total)}</div></div>`).join('');
 }
 
+function urlBase64ToUint8Array(b64){
+  const pad='='.repeat((4-b64.length%4)%4);
+  const base64=(b64+pad).replace(/-/g,'+').replace(/_/g,'/');
+  const raw=atob(base64);
+  return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));
+}
+
+window.subscribeToPush=async function(){
+  if(!('serviceWorker' in navigator)||!('PushManager' in window)) return;
+  const biz=window.currentBusiness;
+  if(!biz?.id) return;
+  try{
+    const reg=await navigator.serviceWorker.ready;
+    let sub=await reg.pushManager.getSubscription();
+    if(!sub){
+      const perm=await Notification.requestPermission();
+      if(perm!=='granted') return;
+      sub=await reg.pushManager.subscribe({
+        userVisibleOnly:true,
+        applicationServerKey:urlBase64ToUint8Array('BEF7CaJj2lfEpcYaf3g46TlwI4XFpIlzYNi0BUABEB4ZnCwSK5_SXYIsF6XrRjWAHC5qKyQjjBZ97cSWAmg4VpI')
+      });
+    }
+    await sb.from('businesses').update({push_subscription:sub.toJSON()}).eq('id',biz.id);
+  }catch(e){}
+};
+
 async function notifyContractor(doc, event){
-  if(!doc||!doc.topic) return;
+  if(!doc?.shareToken) return;
   const label=doc.type==='invoice'?'Invoice':'Estimate';
   const t=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
   const titles={
@@ -8048,12 +8074,11 @@ async function notifyContractor(doc, event){
     declined:(doc.client||'Client')+' declined '+label+' '+doc.id+' · '+t,
     queried:(doc.client||'Client')+' sent a query on '+label+' '+doc.id+' · '+t
   };
-  const tags={opened:'eyes',signed:'white_check_mark',declined:'x',queried:'speech_balloon'};
   try{
-    await fetch('https://ntfy.sh/'+doc.topic,{
+    await fetch('https://nslqoidosdfyjdojvrqa.supabase.co/functions/v1/send-push',{
       method:'POST',
-      headers:{'Content-Type':'text/plain','Title':titles[event]||titles.opened,'Priority':'high','Tags':tags[event]||'eyes'},
-      body:bodies[event]||bodies.opened
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({token:doc.shareToken,event,title:titles[event]||titles.opened,body:bodies[event]||bodies.opened})
     });
   }catch(e){}
 }
@@ -8831,6 +8856,9 @@ async function bootTradeFlow(){
 if(typeof document!=='undefined'){
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',bootTradeFlow,{once:true});
   else bootTradeFlow();
+}
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/sw.js').catch(()=>{});
 }
 </script>
 
