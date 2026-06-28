@@ -1309,7 +1309,7 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
       <div class="inv-fab-item" onclick="invAction('work-order')"><div class="inv-fab-label" data-en-text="Work Order">Work Order</div><div class="inv-fab-ic">WO</div></div>
       <div class="inv-fab-item" id="estimate-convert-action" onclick="invAction('convert-estimate')" style="display:none"><div class="inv-fab-label" id="estimate-convert-label">Convert to Invoice</div><div class="inv-fab-ic currency-fab-ic">£</div></div>
       <div class="inv-fab-item" id="estimate-schedule-action" onclick="invAction('schedule-estimate')" style="display:none"><div class="inv-fab-label" id="estimate-schedule-label">Add to Schedule</div><div class="inv-fab-ic">&#128197;</div></div>
-      <div class="inv-fab-item" onclick="invAction('payments')"><div class="inv-fab-label" data-en-text="Payments">Payments</div><div class="inv-fab-ic currency-fab-ic">£</div></div>
+      <div class="inv-fab-item" id="payments-fab-action" onclick="invAction('payments')"><div class="inv-fab-label" data-en-text="Payments">Payments</div><div class="inv-fab-ic currency-fab-ic">£</div></div>
       <div class="inv-fab-item" onclick="invAction('email')"><div class="inv-fab-label" data-en-text="Send by Email">Send by Email</div><div class="inv-fab-ic">@</div></div>
       <div class="inv-fab-item" onclick="invAction('sms')"><div class="inv-fab-label" data-en-text="Send by SMS">Send by SMS</div><div class="inv-fab-ic">SMS</div></div>
       <div class="inv-fab-item" onclick="invShareLink()"><div class="inv-fab-label" data-en-text="Share Link">Share Link</div><div class="inv-fab-ic">&#128279;</div></div>
@@ -5168,6 +5168,8 @@ function updateDetailActionState(){
   const isPreviewDoc=currentDetailDoc?.id==='PREVIEW';
   const coAction=document.getElementById('co-fab-action');
   if(coAction) coAction.style.display=(isEstimate||isPreviewDoc)?'none':'flex';
+  const paymentsAction=document.getElementById('payments-fab-action');
+  if(paymentsAction) paymentsAction.style.display=isEstimate?'none':'flex';
 }
 
 function invAction(type){
