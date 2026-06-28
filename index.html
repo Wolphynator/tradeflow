@@ -739,6 +739,39 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
   </div>
 </div>
 
+<!--  SCREEN: SET NEW PASSWORD (password reset redirect) -->
+<div id="screen-reset-password" class="screen">
+  <div class="top-nav">
+    <div class="nav-block" style="flex:1;justify-content:center;text-align:center">
+      <div class="nav-title">TradeFlow</div>
+    </div>
+  </div>
+  <div class="scroll pad">
+    <div class="auth-wrap">
+      <div class="auth-logo-mark">TF</div>
+      <div class="auth-headline">Set new password</div>
+      <div class="auth-sub">Choose a strong password for your account.</div>
+      <div class="auth-card">
+        <div id="reset-pw-error" class="auth-error"></div>
+        <div class="auth-field" style="margin-bottom:8px">
+          <label class="auth-label" for="reset-pw-input">New Password</label>
+          <div class="auth-pw-wrap">
+            <input class="client-line-input" id="reset-pw-input" type="password" placeholder="Min. 8 characters" autocomplete="new-password" oninput="updateResetPwChecklist(this.value)">
+            <button class="auth-pw-toggle" type="button" onclick="togglePwVisibility('reset-pw-input',this)" aria-label="Show password" tabindex="-1"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
+          <div id="reset-pw-checklist" class="auth-pw-checklist" style="display:none">
+            <div id="rpwc-len"  class="pwc-row">✗ At least 8 characters</div>
+            <div id="rpwc-up"   class="pwc-row">✗ One uppercase letter</div>
+            <div id="rpwc-low"  class="pwc-row">✗ One lowercase letter</div>
+            <div id="rpwc-num"  class="pwc-row">✗ One number</div>
+          </div>
+        </div>
+        <button class="btn-p" id="reset-pw-btn" style="width:100%;margin-top:8px" onclick="handleSetNewPassword()">Set New Password</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!--  SCREEN: SIGN UP  -->
 <div id="screen-signup" class="screen">
   <div class="top-nav">

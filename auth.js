@@ -549,17 +549,71 @@ function updateSidebarUser() {
   });
 }
 
-// ─── Init & sign out ───────────────────────────────────────────────────────
-async function initAuth() {
-  bindAuthValidation();
-  resetAuthButtons();
+// ─── Set new password (password recovery flow) ────────────────────────────
+const RESET_PW_RULES = [
+  ['rpwc-len', pw => pw.length >= 8,   'At least 8 characters'],
+  ['rpwc-up',  pw => /[A-Z]/.test(pw), 'One uppercase letter'],
+  ['rpwc-low', pw => /[a-z]/.test(pw), 'One lowercase letter'],
+  ['rpwc-num', pw => /[0-9]/.test(pw), 'One number'],
+];
+
+function updateResetPwChecklist(pw) {
+  const list = document.getElementById('reset-pw-checklist');
+  if (!list) return;
+  if (!pw) { list.style.display = 'none'; return; }
+  list.style.display = 'block';
+  RESET_PW_RULES.forEach(([id, test, label]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const pass = test(pw);
+    el.className   = 'pwc-row ' + (pass ? 'ok' : 'fail');
+    el.textContent = (pass ? '✓ ' : '✗ ') + label;
+  });
+}
+
+async function handleSetNewPassword() {
+  const pw  = document.getElementById('reset-pw-input')?.value || '';
+  const btn = document.getElementById('reset-pw-btn');
+  clearAuthError('reset-pw-error');
+  const check = validatePassword(pw);
+  if (!check.valid) { showAuthError('reset-pw-error', check.message); return; }
+  btn.textContent = 'Saving…';
+  btn.disabled    = true;
+  const { error } = await sb.auth.updateUser({ password: pw });
+  if (error) {
+    showAuthError('reset-pw-error', humanizeAuthError(error));
+    btn.textContent = 'Set New Password';
+    btn.disabled    = false;
+    return;
+  }
+  btn.textContent = 'Set New Password';
+  btn.disabled    = false;
+  document.getElementById('reset-pw-input').value = '';
+  const list = document.getElementById('reset-pw-checklist');
+  if (list) list.style.display = 'none';
+  // Password updated — log in normally
   const { data: { session } } = await sb.auth.getSession();
   if (session) {
     await onLoginSuccess(session.user);
   } else {
     goTo('screen-signin');
   }
+}
+
+// ─── Init & sign out ───────────────────────────────────────────────────────
+async function initAuth() {
+  bindAuthValidation();
+  resetAuthButtons();
+
+  let _recoveryMode = false;
+
+  // Register BEFORE getSession() so PASSWORD_RECOVERY is never missed
   sb.auth.onAuthStateChange((event) => {
+    if (event === 'PASSWORD_RECOVERY') {
+      _recoveryMode = true;
+      goTo('screen-reset-password');
+      return;
+    }
     if (event === 'SIGNED_OUT') {
       currentUser     = null;
       currentBusiness = null;
@@ -572,6 +626,19 @@ async function initAuth() {
       goTo('screen-signin');
     }
   });
+
+  // Belt-and-suspenders: hash may still be present if Supabase hasn't cleared it yet
+  if (/type=recovery/i.test(location.hash)) _recoveryMode = true;
+
+  if (_recoveryMode) { goTo('screen-reset-password'); return; }
+
+  const { data: { session } } = await sb.auth.getSession();
+  if (_recoveryMode) return; // PASSWORD_RECOVERY fired during getSession()
+  if (session) {
+    await onLoginSuccess(session.user);
+  } else {
+    goTo('screen-signin');
+  }
 }
 
 async function signOut() {
@@ -582,6 +649,8 @@ async function signOut() {
 // ─── Public API ────────────────────────────────────────────────────────────
 window.handleSignIn            = handleSignIn;
 window.handleSignUp            = handleSignUp;
+window.handleSetNewPassword    = handleSetNewPassword;
+window.updateResetPwChecklist  = updateResetPwChecklist;
 window.signOut                 = signOut;
 window.togglePwVisibility      = togglePwVisibility;
 window.updatePasswordChecklist = updatePasswordChecklist;
