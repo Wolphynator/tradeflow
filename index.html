@@ -2173,14 +2173,13 @@ function renderPaymentSummaryBox(data,paidAmt,outstandingAmt){
   }
   const isPaidFull=outstanding<=0&&contractTotal>0;
   const contractLabel=currentDetailType==='estimate'?'Estimated Total':'Original Contract';
-  const mDoc=n=>moneyDoc(n,data.currency_code);
-  let rows='<div class="payment-summary-row"><span class="payment-summary-label">'+contractLabel+'</span><span class="payment-summary-value">'+mDoc(contractTotal)+'</span></div>';
-  if(coAmt>0) rows+='<div class="payment-summary-row"><span class="payment-summary-label">Approved Variations</span><span class="payment-summary-value good">+'+mDoc(coAmt)+'</span></div>';
-  if(paidSoFar>0) rows+='<div class="payment-summary-row"><span class="payment-summary-label">Paid So Far</span><span class="payment-summary-value good">-'+mDoc(paidSoFar)+'</span></div>';
+  let rows='<div class="payment-summary-row"><span class="payment-summary-label">'+contractLabel+'</span><span class="payment-summary-value">'+money(contractTotal)+'</span></div>';
+  if(coAmt>0) rows+='<div class="payment-summary-row"><span class="payment-summary-label">Approved Variations</span><span class="payment-summary-value good">+'+money(coAmt)+'</span></div>';
+  if(paidSoFar>0) rows+='<div class="payment-summary-row"><span class="payment-summary-label">Paid So Far</span><span class="payment-summary-value good">-'+money(paidSoFar)+'</span></div>';
   box.innerHTML='<div class="payment-summary-box">'
     +'<div class="payment-summary-title">Payment Summary</div>'
     +rows
-    +'<div class="payment-summary-final"><span class="payment-summary-label">Outstanding Balance</span><span class="payment-summary-value '+(isPaidFull?'paid':'')+'">'+(isPaidFull?'Paid &#10003;':mDoc(outstanding))+'</span></div>'
+    +'<div class="payment-summary-final"><span class="payment-summary-label">Outstanding Balance</span><span class="payment-summary-value '+(isPaidFull?'paid':'')+'">'+(isPaidFull?'Paid &#10003;':money(outstanding))+'</span></div>'
     +'</div>';
   box.style.display='';
 }
@@ -2203,30 +2202,29 @@ function renderDetailTotals(data,paidAmt,balance){
     ? explicitBalance
     : Math.max(0,effectiveTotal+coEffective-deposit-paid);
   const hasBreakdown=discount>0||data.vatEnabled||data.taxEnabled||deposit>0;
-  const mDoc=n=>moneyDoc(n,data.currency_code||data.currencyCode);
-  setText('#inv-subtotal-val',mDoc(subtotal));
+  setText('#inv-subtotal-val',money(subtotal));
   const discRow=document.getElementById('inv-discount-row');
   if(discRow) discRow.style.display=discount>0?'':'none';
-  if(discount>0) setText('#inv-discount-val','-'+mDoc(discount));
+  if(discount>0) setText('#inv-discount-val','-'+money(discount));
   const vatRow=document.getElementById('inv-vat-row');
   if(vatRow) vatRow.style.display=data.vatEnabled?'':'none';
   setText('#inv-vat-label','VAT ('+(data.vatRate||20)+'%)');
-  setText('#inv-vat-val',mDoc(vatAmt));
+  setText('#inv-vat-val',money(vatAmt));
   const taxRow=document.getElementById('inv-tax-row');
   if(taxRow) taxRow.style.display=data.taxEnabled?'':'none';
   setText('#inv-tax-label','Tax ('+(data.taxRate||0)+'%)');
-  setText('#inv-tax-val',mDoc(taxAmt));
+  setText('#inv-tax-val',money(taxAmt));
   const totalRow=document.getElementById('inv-total-row');
   if(totalRow) totalRow.style.display=hasBreakdown?'':'none';
-  setText('#inv-total-val',mDoc(effectiveTotal));
+  setText('#inv-total-val',money(effectiveTotal));
   const depRow=document.getElementById('inv-deposit-row');
   if(depRow) depRow.style.display=deposit>0?'':'none';
-  if(deposit>0) setText('#inv-deposit-val','-'+mDoc(deposit));
+  if(deposit>0) setText('#inv-deposit-val','-'+money(deposit));
   const coRow=document.getElementById('inv-co-total-row');
   if(coRow) coRow.style.display=coTotal>0?'':'none';
-  if(coTotal>0) setText('#inv-co-total-val','+'+mDoc(coTotal));
-  setText('#inv-paid-total',mDoc(paid));
-  setText('#inv-balance-total',mDoc(bal));
+  if(coTotal>0) setText('#inv-co-total-val','+'+money(coTotal));
+  setText('#inv-paid-total',money(paid));
+  setText('#inv-balance-total',money(bal));
   renderPaymentInstructions(currentDetailType||data.type||'invoice');
   renderPaymentSummaryBox(data,paid,bal);
   const schedSection=document.getElementById('inv-schedule-section');
@@ -2305,7 +2303,7 @@ function openInvoiceDetail(index){
       container.innerHTML=inv.lines.map(line=>{
         const lt=line.qty*line.unitPrice;
         const pricing=linePricingSummary(line);
-        return'<div class="inv-line-item"><div class="inv-li-name">'+esc(line.name)+'</div>'+(pricing?'<div class="inv-li-desc">'+esc(pricing)+'</div>':'')+(line.description?'<div class="inv-li-desc">'+esc(line.description)+'</div>':'')+'<div class="inv-li-total">'+moneyDoc(lt,inv.currency_code)+'</div></div>';
+        return'<div class="inv-line-item"><div class="inv-li-name">'+esc(line.name)+'</div>'+(pricing?'<div class="inv-li-desc">'+esc(pricing)+'</div>':'')+(line.description?'<div class="inv-li-desc">'+esc(line.description)+'</div>':'')+'<div class="inv-li-total">'+money(lt)+'</div></div>';
       }).join('');
     } else {
       container.innerHTML='<div class="inv-line-item"><div class="inv-li-name">'+esc(inv.lineDesc||'—')+'</div>'+(inv.lineScope?'<div class="inv-li-desc">'+esc(inv.lineScope)+'</div>':'')+'<div class="inv-li-total">'+moneyDoc(inv.total,inv.currency_code)+'</div></div>';
@@ -2368,7 +2366,7 @@ function openEstimateDetail(index){
       ?est.lines.map(line=>{
         const lt=(line.qty||0)*(line.unitPrice||0);
         const pricing=linePricingSummary(line);
-        return'<div class="inv-line-item"><div class="inv-li-name">'+esc(line.name||'')+'</div>'+(pricing?'<div class="inv-li-desc">'+esc(pricing)+'</div>':'')+(line.description?'<div class="inv-li-desc">'+esc(line.description)+'</div>':'')+'<div class="inv-li-total">'+moneyDoc(lt,est.currency_code)+'</div></div>';
+        return'<div class="inv-line-item"><div class="inv-li-name">'+esc(line.name||'')+'</div>'+(pricing?'<div class="inv-li-desc">'+esc(pricing)+'</div>':'')+(line.description?'<div class="inv-li-desc">'+esc(line.description)+'</div>':'')+'<div class="inv-li-total">'+money(lt)+'</div></div>';
       }).join('')
       :'<div class="inv-line-item"><div class="inv-li-name" style="color:var(--muted)">No line items added yet</div></div>';
   }
@@ -5112,6 +5110,12 @@ function applyCurrency(){
   renderPayments();
   renderNewInvoice();
   renderNewEstimate();
+  // Re-render open document detail with new currency
+  if(currentDetailDoc){
+    const _paid=currentDetailType==='invoice'?invoicePaymentsTotal(currentDetailDoc):0;
+    const _bal=currentDetailType==='invoice'?invoiceBalance(currentDetailDoc):(currentDetailDoc.balanceDue??Math.max(0,(currentDetailDoc.total||0)-(currentDetailDoc.deposit||0)));
+    try{renderDetailTotals(currentDetailDoc,_paid,_bal)}catch(e){}
+  }
 }
 
 function initCurrency(){
@@ -5580,7 +5584,7 @@ function scheduleCurrentEstimate(){
 }
 
 function gbp(amount){
-  return moneyDoc(amount,currentDetailDoc?.currency_code);
+  return money(amount);
 }
 
 function paidTotal(){
@@ -8047,7 +8051,10 @@ function renderClientViewer(doc){
           <div style="min-width:0;display:flex;gap:10px;align-items:flex-start">
             ${doc.logo?'<img src="'+doc.logo+'" alt="Company logo" style="width:42px;height:42px;border-radius:8px;object-fit:cover;border:1px solid var(--border);flex-shrink:0">':''}
             <div><div style="font-size:13px;font-weight:700;color:var(--brand)">${esc(doc.from||'')}</div>
-            ${doc.fromLine2?'<div style="font-size:11.5px;color:var(--muted);margin-top:1px">'+esc(doc.fromLine2)+'</div>':''}</div>
+            ${doc.fromLine2?'<div style="font-size:11.5px;color:var(--muted);margin-top:1px">'+esc(doc.fromLine2)+'</div>':''}
+            ${doc.fromAddr?'<div style="font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:2px">'+esc(doc.fromAddr)+'</div>':''}
+            ${doc.fromPhone?'<div style="font-size:11.5px;color:var(--muted);margin-top:1px">'+esc(doc.fromPhone)+'</div>':''}
+            ${doc.fromEmail?'<div style="font-size:11.5px;color:var(--muted);margin-top:1px">'+esc(doc.fromEmail)+'</div>':''}</div>
           </div>
           <div style="text-align:right;flex-shrink:0">
             <div style="font-size:11px;color:var(--muted);margin-bottom:2px">Bill To</div>
