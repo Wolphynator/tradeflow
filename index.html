@@ -8133,7 +8133,7 @@ function renderClientViewer(doc){
         </div>`:''}
       </div>
     </div>
-      ${doc.signedAt&&doc.paymentInstructions&&doc.paymentInstructions.length?'<div style="margin:0 0 12px;padding:12px 16px;border-top:1px solid var(--border)"><div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Payment Instructions</div><div style="font-size:12px;color:var(--text);line-height:1.7">'+doc.paymentInstructions.map(esc).join('<br>')+'</div></div>':''}
+      <div id="vw-payment-instructions">${doc.signedAt&&doc.paymentInstructions&&doc.paymentInstructions.length?'<div style="margin:0 0 12px;padding:12px 16px;border-top:1px solid var(--border)"><div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Payment Instructions</div><div style="font-size:12px;color:var(--text);line-height:1.7">'+doc.paymentInstructions.map(esc).join('<br>')+'</div></div>':''}</div>
       <button class="vw-pdf-btn" id="vw-pdf-btn" onclick="downloadPDF('viewer')">&#128196; Download PDF</button>
     <div class="vw-footer">Sent via TradeFlow &nbsp;&middot;&nbsp; Powered by Claude AI</div>
   `;
@@ -8417,6 +8417,10 @@ async function submitSignature(){
       '</div>';
     const pdfBtn=document.getElementById('vw-pdf-btn');
     if(pdfBtn){pdfBtn.innerHTML='&#128196; Download Signed PDF';pdfBtn.style.background='var(--brand)';pdfBtn.style.color='white';}
+    const piBlock=document.getElementById('vw-payment-instructions');
+    if(piBlock&&_viewerDoc.paymentInstructions&&_viewerDoc.paymentInstructions.length){
+      piBlock.innerHTML='<div style="margin:0 0 12px;padding:12px 16px;border-top:1px solid var(--border)"><div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Payment Instructions</div><div style="font-size:12px;color:var(--text);line-height:1.7">'+_viewerDoc.paymentInstructions.map(esc).join('<br>')+'</div></div>';
+    }
     notifyContractor({...doc,topic:doc.topic||rpcData?.ntfy_topic},'signed').catch(()=>{});
   } else {
     // Legacy non-token path — show success directly (no DB to lock)
