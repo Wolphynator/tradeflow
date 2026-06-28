@@ -8260,7 +8260,18 @@ async function submitSignature(){
     return;
   }
   const doc=_viewerDoc;
-  const sigDataUrl=_sigCanvas.toDataURL('image/png');
+  // Compress signature to JPEG at half canvas size to stay under Supabase RPC size limits
+  const _compress=()=>{
+    const offscreen=document.createElement('canvas');
+    offscreen.width=Math.round(_sigCanvas.width/2);
+    offscreen.height=Math.round(_sigCanvas.height/2);
+    const ctx2=offscreen.getContext('2d');
+    ctx2.fillStyle='#ffffff';
+    ctx2.fillRect(0,0,offscreen.width,offscreen.height);
+    ctx2.drawImage(_sigCanvas,0,0,offscreen.width,offscreen.height);
+    return offscreen.toDataURL('image/jpeg',0.7);
+  };
+  const sigDataUrl=_compress();
   const now=new Date();
   const dateStr=now.toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'});
   const timeStr=now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
