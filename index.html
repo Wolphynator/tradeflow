@@ -8133,7 +8133,7 @@ function renderClientViewer(doc){
         </div>`:''}
       </div>
     </div>
-      ${doc.paymentInstructions&&doc.paymentInstructions.length?'<div style="margin:0 0 12px;padding:12px 16px;border-top:1px solid var(--border)"><div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Payment Instructions</div><div style="font-size:12px;color:var(--text);line-height:1.7">'+doc.paymentInstructions.map(esc).join('<br>')+'</div></div>':''}
+      ${doc.signedAt&&doc.paymentInstructions&&doc.paymentInstructions.length?'<div style="margin:0 0 12px;padding:12px 16px;border-top:1px solid var(--border)"><div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Payment Instructions</div><div style="font-size:12px;color:var(--text);line-height:1.7">'+doc.paymentInstructions.map(esc).join('<br>')+'</div></div>':''}
       <button class="vw-pdf-btn" id="vw-pdf-btn" onclick="downloadPDF('viewer')">&#128196; Download PDF</button>
     <div class="vw-footer">Sent via TradeFlow &nbsp;&middot;&nbsp; Powered by Claude AI</div>
   `;
@@ -8488,7 +8488,10 @@ function printInvoiceHTML(data, sigDataUrl, isViewer){
 
   const rawTotal=data.total??data.balanceDue??'';
   const totalStr=isViewer?formatDocMoney(rawTotal):money(data.total);
-  const payLines=paymentInstructionLines(isEst?'estimate':'invoice');
+  // Viewer: use DB snapshot (only after acceptance). In-app: use live Doc Settings.
+  const payLines=isViewer
+    ?(data.signedAt&&data.paymentInstructions&&data.paymentInstructions.length?data.paymentInstructions:[])
+    :paymentInstructionLines(isEst?'estimate':'invoice');
   const paymentBlock=payLines.length
     ?'<div class="pay-info"><div class="pay-title">Payment instructions</div><div class="pay-text">'+payLines.map(escHtml).join('<br>')+'</div></div>'
     :'';
