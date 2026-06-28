@@ -644,6 +644,7 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
 <script src="auth.js?v=auth-signup-reset-20260623-5"></script>
 </head>
 <body>
+<script>if(location.hash.startsWith('#view/'))document.write('<style>#app{display:none!important}</style>');</script>
 <div id="app">
 
 <!--  SIDEBAR OVERLAY  -->
@@ -7874,12 +7875,21 @@ async function checkViewerMode(){
   const root=document.getElementById('viewer-root');
   const VIEWER_CSS='display:flex;flex-direction:column;min-height:100%;position:fixed;inset:0;background:var(--bg);z-index:200;overflow-y:auto;max-width:430px;margin:0 auto;font-family:-apple-system,sans-serif';
 
+  // Hide app immediately to prevent login screen flash while RPC loads
+  if(appEl) appEl.style.display='none';
+  if(root) root.style.cssText=VIEWER_CSS+'';
+  if(root) root.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:15px">Loading...</div>';
+
   // Supabase token format: inv-{32hex} or est-{32hex}
   const isInvToken=val.startsWith('inv-');
   const isEstToken=val.startsWith('est-');
   if(isInvToken||isEstToken){
     const token=val.slice(4);
-    if(token.length<32) return false;
+    if(token.length<32){
+      if(appEl) appEl.style.display='';
+      if(root) root.style.display='none';
+      return false;
+    }
     const docType=isEstToken?'estimate':'invoice';
     const rpcName=isEstToken?'get_estimate_by_share_token':'get_invoice_by_share_token';
     const docKey=isEstToken?'estimate':'invoice';
