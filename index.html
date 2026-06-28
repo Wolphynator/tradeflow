@@ -553,8 +553,10 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
 .vw-agreement-text{font-size:12.5px;color:var(--text);line-height:1.65}
 .vw-sig-wrap{margin-top:14px}
 .vw-sig-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
-.vw-sig-canvas{width:100%;height:130px;border:2px dashed var(--border);border-radius:10px;background:white;touch-action:none;display:block;cursor:crosshair}
-.vw-sig-canvas.error{border-color:var(--danger)}
+.vw-sig-input{width:100%;padding:14px 16px;border:2px dashed var(--border);border-radius:10px;background:white;font-size:16px;font-family:inherit;outline:none;color:var(--text);box-sizing:border-box}
+.vw-sig-input.error{border-color:var(--danger)}
+#vw-sig-preview{height:100px;border-bottom:2px solid #1a1d23;margin-top:10px;display:flex;align-items:center;justify-content:center;background:white;border-radius:6px;overflow:hidden;padding:0 12px}
+.vw-sig-preview-placeholder{font-size:13px;color:#d1d5db}
 .vw-sig-actions{display:flex;gap:10px;margin-top:10px}
 .vw-sig-clear{flex:0 0 auto;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 18px;font-size:14px;font-weight:600;cursor:pointer;color:var(--muted)}
 .vw-sig-submit{flex:1;background:var(--brand);color:white;border:none;border-radius:10px;padding:12px;font-size:15px;font-weight:600;cursor:pointer}
@@ -8100,8 +8102,9 @@ function renderClientViewer(doc){
             <div class="vw-agreement-text">${agreementText}</div>
           </div>
           <div class="vw-sig-wrap">
-            <div class="vw-sig-label">Client Signature</div>
-            <canvas id="vw-sig-canvas" class="vw-sig-canvas"></canvas>
+            <div class="vw-sig-label">Type your full name to sign</div>
+            <input type="text" id="vw-sig-input" class="vw-sig-input" placeholder="Your full name" oninput="onSigInput(this.value)" autocomplete="name" autocorrect="off" spellcheck="false">
+            <div class="vw-sig-preview" id="vw-sig-preview"><span class="vw-sig-preview-placeholder">Your signature will appear here</span></div>
             <div class="vw-sig-actions">
               <button class="vw-sig-clear" onclick="clearSignature()">Clear</button>
               <button class="vw-sig-submit" onclick="submitSignature()">Sign &amp; Accept</button>
@@ -8211,90 +8214,59 @@ async function notifyContractor(doc, event){
   }catch(e){}
 }
 
-// ── Signature pad ──
-let _sigCanvas=null,_sigCtx=null,_sigDrawing=false,_sigHasData=false;
+// ── Typed signature ──
+let _sigText='';
 
-function initSignaturePad(){
-  _sigCanvas=document.getElementById('vw-sig-canvas');
-  if(!_sigCanvas) return;
-  _sigCtx=_sigCanvas.getContext('2d');
-  _sigDrawing=false; _sigHasData=false;
-  const dpr=window.devicePixelRatio||1;
-  const rect=_sigCanvas.getBoundingClientRect();
-  _sigCanvas.width=Math.round(rect.width*dpr);
-  _sigCanvas.height=Math.round(rect.height*dpr);
-  _sigCtx.scale(dpr,dpr);
-  _sigCtx.strokeStyle='#1a1d23';
-  _sigCtx.lineWidth=2.2;
-  _sigCtx.lineCap='round';
-  _sigCtx.lineJoin='round';
-  drawSigPlaceholder();
-  _sigCanvas.addEventListener('mousedown',sigStart);
-  _sigCanvas.addEventListener('mousemove',sigMove);
-  _sigCanvas.addEventListener('mouseup',sigEnd);
-  _sigCanvas.addEventListener('mouseleave',sigEnd);
-  _sigCanvas.addEventListener('touchstart',e=>{e.preventDefault();sigStart(e.touches[0]);},{passive:false});
-  _sigCanvas.addEventListener('touchmove',e=>{e.preventDefault();sigMove(e.touches[0]);},{passive:false});
-  _sigCanvas.addEventListener('touchend',e=>{e.preventDefault();sigEnd();},{passive:false});
+function _loadSigFont(){
+  if(document.getElementById('dancing-script-font')) return;
+  const link=document.createElement('link');
+  link.id='dancing-script-font';
+  link.rel='stylesheet';
+  link.href='https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&display=swap';
+  document.head.appendChild(link);
 }
 
-function drawSigPlaceholder(){
-  if(!_sigCtx||_sigHasData) return;
-  const rect=_sigCanvas.getBoundingClientRect();
-  _sigCtx.save();
-  _sigCtx.font='14px -apple-system,sans-serif';
-  _sigCtx.fillStyle='#d1d5db';
-  _sigCtx.textAlign='center';
-  _sigCtx.fillText('Draw your signature here',rect.width/2,rect.height/2+6);
-  _sigCtx.strokeStyle='#e5e7eb';
-  _sigCtx.lineWidth=1;
-  _sigCtx.beginPath();
-  _sigCtx.moveTo(rect.width*0.08,rect.height*0.72);
-  _sigCtx.lineTo(rect.width*0.92,rect.height*0.72);
-  _sigCtx.stroke();
-  _sigCtx.restore();
-  _sigCtx.strokeStyle='#1a1d23';
-  _sigCtx.lineWidth=2.2;
+function initSignatureInput(){
+  _sigText='';
+  const inp=document.getElementById('vw-sig-input');
+  if(inp){inp.value='';inp.classList.remove('error');setTimeout(()=>inp.focus(),50);}
+  const preview=document.getElementById('vw-sig-preview');
+  if(preview) preview.innerHTML='<span class="vw-sig-preview-placeholder">Your signature will appear here</span>';
+  _loadSigFont();
 }
 
-function getSigPos(e){
-  const rect=_sigCanvas.getBoundingClientRect();
-  return{x:e.clientX-rect.left,y:e.clientY-rect.top};
-}
-
-function sigStart(e){
-  if(!_sigCtx) return;
-  if(!_sigHasData){
-    _sigCtx.clearRect(0,0,_sigCanvas.width,_sigCanvas.height);
-    _sigHasData=true;
-    if(_sigCanvas.classList) _sigCanvas.classList.remove('error');
+function onSigInput(val){
+  _sigText=val.trim();
+  const preview=document.getElementById('vw-sig-preview');
+  if(!preview) return;
+  if(_sigText){
+    preview.innerHTML='<span style="font-family:\'Dancing Script\',cursive;font-size:46px;font-weight:600;color:#1a1d23;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">'+esc(_sigText)+'</span>';
+  } else {
+    preview.innerHTML='<span class="vw-sig-preview-placeholder">Your signature will appear here</span>';
   }
-  _sigDrawing=true;
-  const p=getSigPos(e);
-  _sigCtx.beginPath();
-  _sigCtx.moveTo(p.x,p.y);
-}
-
-function sigMove(e){
-  if(!_sigDrawing||!_sigCtx) return;
-  const p=getSigPos(e);
-  _sigCtx.lineTo(p.x,p.y);
-  _sigCtx.stroke();
-  _sigCtx.beginPath();
-  _sigCtx.moveTo(p.x,p.y);
-}
-
-function sigEnd(){
-  _sigDrawing=false;
-  if(_sigCtx) _sigCtx.beginPath();
 }
 
 function clearSignature(){
-  if(!_sigCtx) return;
-  _sigHasData=false;
-  _sigCtx.clearRect(0,0,_sigCanvas.width,_sigCanvas.height);
-  drawSigPlaceholder();
-  if(_sigCanvas.classList) _sigCanvas.classList.remove('error');
+  _sigText='';
+  const inp=document.getElementById('vw-sig-input');
+  if(inp){inp.value='';inp.classList.remove('error');inp.focus();}
+  const preview=document.getElementById('vw-sig-preview');
+  if(preview) preview.innerHTML='<span class="vw-sig-preview-placeholder">Your signature will appear here</span>';
+}
+
+async function _renderSigToBase64(text){
+  await document.fonts.ready;
+  const offscreen=document.createElement('canvas');
+  offscreen.width=500;offscreen.height=160;
+  const ctx=offscreen.getContext('2d');
+  ctx.fillStyle='#ffffff';
+  ctx.fillRect(0,0,500,160);
+  ctx.font='600 58px "Dancing Script",cursive';
+  ctx.fillStyle='#1a1d23';
+  ctx.textAlign='center';
+  ctx.textBaseline='middle';
+  ctx.fillText(text,250,88);
+  return offscreen.toDataURL('image/jpeg',0.85);
 }
 
 let _vwDeclineReason='';
@@ -8309,10 +8281,7 @@ function vwShowSection(type){
   const sel=document.querySelector('.vw-resp-'+type);
   if(sel) sel.classList.add('vw-resp-selected');
   if(type==='accept'&&!alreadyOpen){
-    // Only init pad on first open — re-tapping Accept won't wipe the drawn signature
-    const old=document.getElementById('vw-sig-canvas');
-    if(old){const fresh=old.cloneNode(false);old.parentNode.replaceChild(fresh,old);}
-    setTimeout(()=>initSignaturePad(),80);
+    setTimeout(()=>initSignatureInput(),80);
   }
 }
 
@@ -8362,26 +8331,15 @@ async function submitQuery(){
 }
 
 async function submitSignature(){
-  if(!_sigHasData){
-    if(_sigCanvas) _sigCanvas.classList.add('error');
-    setTimeout(()=>{if(_sigCanvas)_sigCanvas.classList.remove('error');},1400);
+  if(!_sigText){
+    const inp=document.getElementById('vw-sig-input');
+    if(inp){inp.classList.add('error');inp.focus();setTimeout(()=>inp.classList.remove('error'),1400);}
     return;
   }
   const doc=_viewerDoc;
   const submitBtn=document.querySelector('.vw-sig-submit');
   if(submitBtn){submitBtn.disabled=true;submitBtn.textContent='Saving...';}
-
-  const _compress=()=>{
-    const offscreen=document.createElement('canvas');
-    offscreen.width=Math.round(_sigCanvas.width/2);
-    offscreen.height=Math.round(_sigCanvas.height/2);
-    const ctx2=offscreen.getContext('2d');
-    ctx2.fillStyle='#ffffff';
-    ctx2.fillRect(0,0,offscreen.width,offscreen.height);
-    ctx2.drawImage(_sigCanvas,0,0,offscreen.width,offscreen.height);
-    return offscreen.toDataURL('image/jpeg',0.7);
-  };
-  const sigDataUrl=_compress();
+  const sigDataUrl=await _renderSigToBase64(_sigText);
   const now=new Date();
   const dateStr=now.toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'});
   const timeStr=now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
