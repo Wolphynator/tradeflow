@@ -605,12 +605,25 @@ async function initAuth() {
   bindAuthValidation();
   resetAuthButtons();
 
-  let _recoveryMode = false;
+  // supabase.js sets this flag BEFORE createClient() clears the hash
+  if (window._isRecoveryUrl) {
+    window._isRecoveryUrl = false;
+    goTo('screen-reset-password');
+    sb.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        currentUser = null; currentBusiness = null;
+        window.currentUser = null; window.currentBusiness = null;
+        try { resetLocalSessionData(); } catch(e) {}
+        resetAuthButtons();
+        hist.length = 0; hist.push('screen-signin');
+        goTo('screen-signin');
+      }
+    });
+    return;
+  }
 
-  // Register BEFORE getSession() so PASSWORD_RECOVERY is never missed
   sb.auth.onAuthStateChange((event) => {
     if (event === 'PASSWORD_RECOVERY') {
-      _recoveryMode = true;
       goTo('screen-reset-password');
       return;
     }
@@ -627,13 +640,7 @@ async function initAuth() {
     }
   });
 
-  // Belt-and-suspenders: hash may still be present if Supabase hasn't cleared it yet
-  if (/type=recovery/i.test(location.hash)) _recoveryMode = true;
-
-  if (_recoveryMode) { goTo('screen-reset-password'); return; }
-
   const { data: { session } } = await sb.auth.getSession();
-  if (_recoveryMode) return; // PASSWORD_RECOVERY fired during getSession()
   if (session) {
     await onLoginSuccess(session.user);
   } else {
