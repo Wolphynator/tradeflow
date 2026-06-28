@@ -4745,6 +4745,8 @@ async function _executeClientUpdate(index,obj){
   renderClientList();
   updateClientSummary();
   renderSavedClients();
+  const _editIdx=hist.lastIndexOf('screen-manage-client');
+  if(_editIdx>=0) hist.splice(_editIdx,1);
   openClientDetail(index);
   showManageToast('Client updated');
 }
