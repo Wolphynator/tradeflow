@@ -2576,7 +2576,7 @@ function setDocSettings(settings){
     ['30','Estimate terms',normalizeEstimateTerms(next.estimateTerms),'Edit'],
     ['PM','Payment methods',paymentMethodsSummary(next.acceptedPaymentMethods),'Edit',normalizePaymentMethods(next.acceptedPaymentMethods)],
     ['🏦','Bank details',bankDetailsSummary(next.bankDetails),'Edit',normalizeBankDetails(next.bankDetails)],
-    [next.showBankDetails!==false?'👁':'—','Show payment instructions',next.showBankDetails!==false?'Shown on invoices':'Hidden from documents',next.showBankDetails!==false?'Hide':'Show',next.showBankDetails!==false],
+    [next.showBankDetails!==false?'👁':'—','Show payment instructions',next.showBankDetails!==false?'Shown on estimates & invoices':'Hidden from documents',next.showBankDetails!==false?'Hide':'Show',next.showBankDetails!==false],
     ['','Numbering',cleanPlainText(next.numbering,'short')||DEFAULT_DOC_SETTINGS.numbering,'']
   ];
   updateDocSettingsIcons();
@@ -2646,9 +2646,8 @@ function paymentInstructionLines(type){
   const methods=normalizePaymentMethods(settings.acceptedPaymentMethods);
   const lines=[];
   if(methods.length) lines.push('Accepted payment methods: '+methods.join(', '));
-  const isInvoice=type==='invoice';
   const bank=normalizeBankDetails(settings.bankDetails);
-  const showBank=isInvoice&&settings.showBankDetails!==false&&methods.includes('Bank transfer')&&(bank.accountName||bank.bankName||bank.sortCode||bank.accountNumber||bank.iban||bank.swift);
+  const showBank=settings.showBankDetails!==false&&methods.includes('Bank transfer')&&(bank.accountName||bank.bankName||bank.sortCode||bank.accountNumber||bank.iban||bank.swift);
   if(showBank){
     if(bank.accountName) lines.push('Account name: '+bank.accountName);
     if(bank.bankName) lines.push('Bank: '+bank.bankName);
@@ -6544,6 +6543,7 @@ async function saveNewEstimate(){
         clientSignatureDataUrl:null,signed:false,signedAt:null
       };
       renderEstimateList();
+      if(ESTIMATE_TERM_OPTIONS.includes(estimateTerms)){const _ds=getDocSettings();if(_ds.estimateTerms!==estimateTerms){setDocSettings({..._ds,estimateTerms});persistDocSettings();}}
       showManageToast('Estimate updated');
       const idx=editingDocumentIndex;
       editingDocumentType='';editingDocumentIndex=-1;
@@ -6585,6 +6585,7 @@ async function saveNewEstimate(){
       lines:newEstimate.lines.map(l=>({...l})),schedule:'',schedulePayments:[]
     });
     renderEstimateList();
+    if(ESTIMATE_TERM_OPTIONS.includes(estimateTerms)){const _ds=getDocSettings();if(_ds.estimateTerms!==estimateTerms){setDocSettings({..._ds,estimateTerms});persistDocSettings();}}
     showManageToast('Estimate saved as draft');
     _resetForm();
     const _estFormIdx=hist.lastIndexOf('screen-new-estimate');
