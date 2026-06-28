@@ -2125,7 +2125,7 @@ function markInvoiceSentLocal(inv){
     if(currentDetailDoc===inv){
       const elStatus=document.getElementById('inv-meta-status');
       if(elStatus){elStatus.textContent='Sent';elStatus.className='pill sched';elStatus.style.marginTop='4px';}
-      setText('#inv-balance-total',money(invoiceBalance(inv)));
+      setText('#inv-balance-total',moneyDoc(invoiceBalance(inv),inv.currency_code));
     }
   }
 }
@@ -2202,29 +2202,30 @@ function renderDetailTotals(data,paidAmt,balance){
     ? explicitBalance
     : Math.max(0,effectiveTotal+coEffective-deposit-paid);
   const hasBreakdown=discount>0||data.vatEnabled||data.taxEnabled||deposit>0;
-  setText('#inv-subtotal-val',money(subtotal));
+  const mDoc=n=>moneyDoc(n,data.currency_code||data.currencyCode);
+  setText('#inv-subtotal-val',mDoc(subtotal));
   const discRow=document.getElementById('inv-discount-row');
   if(discRow) discRow.style.display=discount>0?'':'none';
-  if(discount>0) setText('#inv-discount-val','-'+money(discount));
+  if(discount>0) setText('#inv-discount-val','-'+mDoc(discount));
   const vatRow=document.getElementById('inv-vat-row');
   if(vatRow) vatRow.style.display=data.vatEnabled?'':'none';
   setText('#inv-vat-label','VAT ('+(data.vatRate||20)+'%)');
-  setText('#inv-vat-val',money(vatAmt));
+  setText('#inv-vat-val',mDoc(vatAmt));
   const taxRow=document.getElementById('inv-tax-row');
   if(taxRow) taxRow.style.display=data.taxEnabled?'':'none';
   setText('#inv-tax-label','Tax ('+(data.taxRate||0)+'%)');
-  setText('#inv-tax-val',money(taxAmt));
+  setText('#inv-tax-val',mDoc(taxAmt));
   const totalRow=document.getElementById('inv-total-row');
   if(totalRow) totalRow.style.display=hasBreakdown?'':'none';
-  setText('#inv-total-val',money(effectiveTotal));
+  setText('#inv-total-val',mDoc(effectiveTotal));
   const depRow=document.getElementById('inv-deposit-row');
   if(depRow) depRow.style.display=deposit>0?'':'none';
-  if(deposit>0) setText('#inv-deposit-val','-'+money(deposit));
+  if(deposit>0) setText('#inv-deposit-val','-'+mDoc(deposit));
   const coRow=document.getElementById('inv-co-total-row');
   if(coRow) coRow.style.display=coTotal>0?'':'none';
-  if(coTotal>0) setText('#inv-co-total-val','+'+money(coTotal));
-  setText('#inv-paid-total',money(paid));
-  setText('#inv-balance-total',money(bal));
+  if(coTotal>0) setText('#inv-co-total-val','+'+mDoc(coTotal));
+  setText('#inv-paid-total',mDoc(paid));
+  setText('#inv-balance-total',mDoc(bal));
   renderPaymentInstructions(currentDetailType||data.type||'invoice');
   renderPaymentSummaryBox(data,paid,bal);
   const schedSection=document.getElementById('inv-schedule-section');
@@ -2303,10 +2304,10 @@ function openInvoiceDetail(index){
       container.innerHTML=inv.lines.map(line=>{
         const lt=line.qty*line.unitPrice;
         const pricing=linePricingSummary(line);
-        return'<div class="inv-line-item"><div class="inv-li-name">'+esc(line.name)+'</div>'+(pricing?'<div class="inv-li-desc">'+esc(pricing)+'</div>':'')+(line.description?'<div class="inv-li-desc">'+esc(line.description)+'</div>':'')+'<div class="inv-li-total">'+money(lt)+'</div></div>';
+        return'<div class="inv-line-item"><div class="inv-li-name">'+esc(line.name)+'</div>'+(pricing?'<div class="inv-li-desc">'+esc(pricing)+'</div>':'')+(line.description?'<div class="inv-li-desc">'+esc(line.description)+'</div>':'')+'<div class="inv-li-total">'+moneyDoc(lt,inv.currency_code)+'</div></div>';
       }).join('');
     } else {
-      container.innerHTML='<div class="inv-line-item"><div class="inv-li-name">'+esc(inv.lineDesc||'—')+'</div>'+(inv.lineScope?'<div class="inv-li-desc">'+esc(inv.lineScope)+'</div>':'')+'<div class="inv-li-total">'+money(inv.total)+'</div></div>';
+      container.innerHTML='<div class="inv-line-item"><div class="inv-li-name">'+esc(inv.lineDesc||'—')+'</div>'+(inv.lineScope?'<div class="inv-li-desc">'+esc(inv.lineScope)+'</div>':'')+'<div class="inv-li-total">'+moneyDoc(inv.total,inv.currency_code)+'</div></div>';
     }
   }
   // Notes for client
@@ -2366,7 +2367,7 @@ function openEstimateDetail(index){
       ?est.lines.map(line=>{
         const lt=(line.qty||0)*(line.unitPrice||0);
         const pricing=linePricingSummary(line);
-        return'<div class="inv-line-item"><div class="inv-li-name">'+esc(line.name||'')+'</div>'+(pricing?'<div class="inv-li-desc">'+esc(pricing)+'</div>':'')+(line.description?'<div class="inv-li-desc">'+esc(line.description)+'</div>':'')+'<div class="inv-li-total">'+money(lt)+'</div></div>';
+        return'<div class="inv-line-item"><div class="inv-li-name">'+esc(line.name||'')+'</div>'+(pricing?'<div class="inv-li-desc">'+esc(pricing)+'</div>':'')+(line.description?'<div class="inv-li-desc">'+esc(line.description)+'</div>':'')+'<div class="inv-li-total">'+moneyDoc(lt,est.currency_code)+'</div></div>';
       }).join('')
       :'<div class="inv-line-item"><div class="inv-li-name" style="color:var(--muted)">No line items added yet</div></div>';
   }
@@ -5057,6 +5058,12 @@ function money(n){
   const symbol=currentCurrency.symbol||'';
   const spacer=symbol&&/[A-Za-z]$/.test(symbol.trim())&&!symbol.endsWith(' ')?' ':'';
   return symbol+spacer+converted.toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function moneyDoc(n,currencyCode){
+  const c=currencies.find(x=>x[0]===(currencyCode||'GBP'))||currencies.find(x=>x[0]==='GBP');
+  const symbol=c?c[2]:'£';
+  const spacer=symbol&&/[A-Za-z]$/.test(symbol.trim())&&!symbol.endsWith(' ')?' ':'';
+  return symbol+spacer+Number(n).toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2});
 }
 
 function moneyCompact(n){
