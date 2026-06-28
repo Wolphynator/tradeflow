@@ -8859,22 +8859,58 @@ function downloadPDF(source){
   let data, sigDataUrl=null;
   if(source==='viewer'){
     data=enrichPrintData(_viewerDoc,_viewerDoc?.type);
-    const sigImg=document.getElementById('vw-final-sig');
-    if(sigImg) sigDataUrl=sigImg.src;
+    sigDataUrl=_viewerDoc?.signatureData||null;
   } else if(source==='detail'){
-    if(currentDetailDoc?.id==='PREVIEW'){showManageToast('Save the document first to print');return;}
+    if(currentDetailDoc?.id==='PREVIEW'){showManageToast('Save the document first');return;}
     data=enrichPrintData(currentDetailDoc||(currentDetailType==='estimate'?estimates[0]:(invoices[currentInvoiceIndex]||invoices[0])),currentDetailType);
   } else {
     data=enrichPrintData(invoices[currentInvoiceIndex]||invoices[0],'invoice');
   }
   if(!data) return;
   const html=printInvoiceHTML(data,sigDataUrl,source==='viewer');
-  const win=window.open('','_blank');
-  if(!win){showManageToast('Allow pop-ups to open PDF');return;}
-  win.document.write(html);
-  win.document.close();
-  win.focus();
-  setTimeout(()=>{win.print();},450);
+  const docId=data.id||'doc';
+  const isEst=(data.type||'invoice')==='estimate';
+  const filename=(isEst?'Estimate-':'Invoice-')+docId+'.pdf';
+
+  const pdfBtn=document.getElementById('vw-pdf-btn');
+  const prevBtnHTML=pdfBtn?pdfBtn.innerHTML:null;
+  const setBusy=()=>{if(pdfBtn){pdfBtn.disabled=true;pdfBtn.textContent='Generating…';}else showManageToast('Generating PDF…');};
+  const setDone=(ok)=>{if(pdfBtn){pdfBtn.disabled=false;pdfBtn.innerHTML=prevBtnHTML||'&#128196; Download PDF';}if(!ok)showManageToast('PDF failed — try again');};
+
+  const _generate=()=>{
+    setBusy();
+    const iframe=document.createElement('iframe');
+    iframe.style.cssText='position:absolute;left:-9999px;top:0;width:794px;height:1123px;border:none';
+    document.body.appendChild(iframe);
+    iframe.addEventListener('load',()=>{
+      const el=iframe.contentDocument?.querySelector('.page')||iframe.contentDocument?.body;
+      if(!el){document.body.removeChild(iframe);setDone(false);return;}
+      html2pdf().set({
+        margin:0,filename,
+        image:{type:'jpeg',quality:0.95},
+        html2canvas:{scale:2,useCORS:true,logging:false},
+        jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
+      }).from(el).save()
+        .then(()=>{document.body.removeChild(iframe);setDone(true);})
+        .catch(()=>{document.body.removeChild(iframe);setDone(false);});
+    });
+    iframe.srcdoc=html;
+  };
+
+  if(typeof html2pdf!=='undefined'){_generate();return;}
+  // Lazy-load library on first use — cached by browser on subsequent clicks
+  const script=document.createElement('script');
+  script.src='https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+  script.onload=_generate;
+  script.onerror=()=>{
+    // Fallback: open HTML in new tab (user can print-to-PDF manually)
+    const blob=new Blob([html],{type:'text/html'});
+    const url=URL.createObjectURL(blob);
+    const win=window.open(url,'_blank');
+    if(!win)showManageToast('Allow pop-ups to open PDF');
+    setTimeout(()=>URL.revokeObjectURL(url),60000);
+  };
+  document.head.appendChild(script);
 }
 
 /* ── Invoice numbering (now via Supabase atomic RPC) ── */
