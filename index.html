@@ -2173,13 +2173,14 @@ function renderPaymentSummaryBox(data,paidAmt,outstandingAmt){
   }
   const isPaidFull=outstanding<=0&&contractTotal>0;
   const contractLabel=currentDetailType==='estimate'?'Estimated Total':'Original Contract';
-  let rows='<div class="payment-summary-row"><span class="payment-summary-label">'+contractLabel+'</span><span class="payment-summary-value">'+money(contractTotal)+'</span></div>';
-  if(coAmt>0) rows+='<div class="payment-summary-row"><span class="payment-summary-label">Approved Variations</span><span class="payment-summary-value good">+'+money(coAmt)+'</span></div>';
-  if(paidSoFar>0) rows+='<div class="payment-summary-row"><span class="payment-summary-label">Paid So Far</span><span class="payment-summary-value good">-'+money(paidSoFar)+'</span></div>';
+  const mDoc=n=>moneyDoc(n,data.currency_code);
+  let rows='<div class="payment-summary-row"><span class="payment-summary-label">'+contractLabel+'</span><span class="payment-summary-value">'+mDoc(contractTotal)+'</span></div>';
+  if(coAmt>0) rows+='<div class="payment-summary-row"><span class="payment-summary-label">Approved Variations</span><span class="payment-summary-value good">+'+mDoc(coAmt)+'</span></div>';
+  if(paidSoFar>0) rows+='<div class="payment-summary-row"><span class="payment-summary-label">Paid So Far</span><span class="payment-summary-value good">-'+mDoc(paidSoFar)+'</span></div>';
   box.innerHTML='<div class="payment-summary-box">'
     +'<div class="payment-summary-title">Payment Summary</div>'
     +rows
-    +'<div class="payment-summary-final"><span class="payment-summary-label">Outstanding Balance</span><span class="payment-summary-value '+(isPaidFull?'paid':'')+'">'+(isPaidFull?'Paid &#10003;':money(outstanding))+'</span></div>'
+    +'<div class="payment-summary-final"><span class="payment-summary-label">Outstanding Balance</span><span class="payment-summary-value '+(isPaidFull?'paid':'')+'">'+(isPaidFull?'Paid &#10003;':mDoc(outstanding))+'</span></div>'
     +'</div>';
   box.style.display='';
 }
@@ -5096,11 +5097,6 @@ function updateManageMoneyRows(){
 }
 
 function applyCurrency(){
-  // Live invoice form values (always dynamic)
-  const elLT=document.getElementById('inv-line-total');
-  const elSV=document.getElementById('inv-subtotal-val');
-  if(elLT) elLT.textContent=money(invoiceTotal);
-  if(elSV) elSV.textContent=money(invoiceTotal);
   // Update invoice nav tab icon to current currency symbol
   document.querySelectorAll('.inv-nav-ic').forEach(el=>{ el.textContent=currentCurrency.symbol; });
   document.querySelectorAll('.currency-fab-ic').forEach(el=>{ el.textContent=currentCurrency.symbol||currentCurrency.code||'£'; });
@@ -5584,7 +5580,7 @@ function scheduleCurrentEstimate(){
 }
 
 function gbp(amount){
-  return money(amount);
+  return moneyDoc(amount,currentDetailDoc?.currency_code);
 }
 
 function paidTotal(){
@@ -6957,7 +6953,8 @@ function _sbInvToLocal(row){
     lines,lineDesc:lines.map(l=>l.name).join(', '),
     lineScope:lines.map(l=>[l.name,l.description].filter(Boolean).join(' - ')).join(', '),
     lineTotal:Number(row.total)||0,schedule:'',schedulePayments:[],
-    changeOrders:Array.isArray(row.change_orders)?row.change_orders:[]
+    changeOrders:Array.isArray(row.change_orders)?row.change_orders:[],
+    currency_code:row.currency_code||'GBP'
   };
 }
 
@@ -6984,7 +6981,8 @@ function _sbEstToLocal(row){
     share_token:row.share_token||'',
     convertedInvoiceId:row.converted_to_invoice_id||null,
     invoiceId:'',
-    lines,schedule:'',schedulePayments:[]
+    lines,schedule:'',schedulePayments:[],
+    currency_code:row.currency_code||'GBP'
   };
 }
 
