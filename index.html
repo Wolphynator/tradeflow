@@ -7404,7 +7404,7 @@ function transformShareViewData(data){
     subtotal:doc.subtotal!=null?money(Number(doc.subtotal)):null,
     tax:doc.tax_amount?money(Number(doc.tax_amount)):null,
     total:money(Number(doc.total)||0),balanceDue:money(Number(doc.balance_due||doc.total)||0),
-    shareToken:doc.share_token,_supabaseType:type,topic:data?.ntfy_topic||null
+    shareToken:doc.share_token,_supabaseType:type,topic:data?.ntfy_topic||null,businessId:doc.business_id||null
   };
 }
 
@@ -7892,6 +7892,7 @@ async function checkViewerMode(){
         biz:{name:raw.from_name||'',address:raw.from_address||'',phone:raw.from_phone||'',email:raw.from_email||'',logo_url:raw.logo_data||''}
       };
       const viewerDoc=transformShareViewData(shaped);
+      if(currentBusiness?.id&&raw.business_id&&currentBusiness.id===raw.business_id) viewerDoc.isOwnerPreview=true;
       _viewerDoc=viewerDoc;
       renderClientViewer(viewerDoc);
       appEl.style.display='none';
@@ -7967,12 +7968,12 @@ function renderClientViewer(doc){
         ${(()=>{const cos=doc.changeOrders||[];if(!cos.length)return'';return cos.map(co=>{const lines=(co.lines||[]).map(l=>'<div class="inv-line-item"><div class="inv-li-name">'+esc(l.name||'')+'</div>'+(l.description?'<div class="inv-li-desc">'+esc(l.description)+'</div>':'')+'<div class="inv-li-total">'+money((l.qty||0)*(l.unitPrice||0))+'</div></div>').join('');return'<div style="border-top:2px dashed var(--border);margin-top:4px"><div style="padding:10px 16px 4px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Change Order '+co.id+' &nbsp;·&nbsp; '+esc(co.date||'')+'</div>'+lines+(co.notes?'<div style="font-size:12px;color:var(--muted);margin:4px 16px 8px;padding:8px;background:var(--bg-alt,#f9fafb);border-radius:6px">'+esc(co.notes)+'</div>':'')+'<div class="inv-totals"><div class="inv-tot-row grand"><span>CO Total</span><span>'+money(co.total||0)+'</span></div></div></div>';}).join('');})()}
       </div>
       <div id="vw-action-area">
-        <div class="vw-resp-btns">
-          ${isInv
+        ${doc.isOwnerPreview
+          ? `<div style="margin:16px;padding:12px 16px;background:#f0fdf4;border:1px solid #86efac;border-radius:10px;font-size:13px;color:#166534;text-align:center">&#128274; <strong>Preview mode</strong> — this is your document. Your client will see the action buttons here.</div>`
+          : `<div class="vw-resp-btns">${isInv
             ? `<button class="vw-resp-accept" onclick="vwShowSection('accept')">&#10003; Sign &amp; Accept</button><button class="vw-resp-query" onclick="vwShowSection('query')">? Query</button>`
             : `<button class="vw-resp-accept" onclick="vwShowSection('accept')">&#10003; Accept</button><button class="vw-resp-decline" onclick="vwShowSection('decline')">&#10007; Decline</button><button class="vw-resp-query" onclick="vwShowSection('query')">? Query</button>`
-          }
-        </div>
+          }</div>`}
         <div id="vw-accept-panel" class="vw-sub-panel">
           <div class="vw-agreement">
             <div class="vw-agreement-title">Acceptance &amp; Authorisation</div>
