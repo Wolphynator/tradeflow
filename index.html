@@ -7491,7 +7491,7 @@ function transformShareViewData(data){
   return{
     type,id:doc.number,client:doc.client_name,
     clientAddr:(doc.client_address||'').replace(/\n/g,'<br>'),
-    from:biz?.name||'TradeFlowPro',fromLine2:'',fromAddr:biz?.address||'',
+    from:biz?.name||'TradeFlowPro',fromLine2:'',fromAddr:(biz?.address||'').split('\n').filter(Boolean).join(', '),
     fromPhone:biz?.phone||'',fromEmail:biz?.email||'',logo:biz?.logo_url||'',
     date:dateText,
     terms:terms||(!isInv?defaultEstimateTerms():''),dueDate,validUntil,notes:doc.notes||'',scope:doc.scope||doc.notes||'',
@@ -8054,15 +8054,15 @@ function renderClientViewer(doc){
     <div class="vw-body">
       <div class="inv-doc" style="margin:0 0 14px">
         <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
-          <div style="flex:1;min-width:0;display:flex;gap:10px;align-items:flex-start">
-            ${doc.logo?'<img src="'+doc.logo+'" alt="Company logo" style="width:42px;height:42px;border-radius:8px;object-fit:cover;border:1px solid var(--border);flex-shrink:0">':''}
-            <div style="min-width:0;word-break:break-word"><div style="font-size:13px;font-weight:700;color:var(--brand)">${esc(doc.from||'')}</div>
+          <div style="flex:1;min-width:0">
+            ${doc.logo?'<div style="width:44px;height:44px;border-radius:8px;overflow:hidden;border:1px solid var(--border);margin-bottom:8px"><img src="'+doc.logo+'" alt="Company logo" style="width:100%;height:100%;object-fit:cover"></div>':''}
+            <div style="font-size:13px;font-weight:700;color:var(--brand)">${esc(doc.from||'')}</div>
             ${doc.fromLine2?'<div style="font-size:11.5px;color:var(--muted);margin-top:1px">'+esc(doc.fromLine2)+'</div>':''}
             ${doc.fromAddr?'<div style="font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:2px">'+esc(doc.fromAddr)+'</div>':''}
             ${doc.fromPhone?'<div style="font-size:11.5px;color:var(--muted);margin-top:1px">'+esc(doc.fromPhone)+'</div>':''}
-            ${doc.fromEmail?'<div style="font-size:11.5px;color:var(--muted);margin-top:1px">'+esc(doc.fromEmail)+'</div>':''}</div>
+            ${doc.fromEmail?'<div style="font-size:11.5px;color:var(--muted);margin-top:1px">'+esc(doc.fromEmail)+'</div>':''}
           </div>
-          <div style="text-align:right;flex-shrink:0;max-width:45%;word-break:break-word">
+          <div style="text-align:right;flex-shrink:0;max-width:52%;word-break:break-word">
             <div style="font-size:11px;color:var(--muted);margin-bottom:2px">Bill To</div>
             <div style="font-size:13px;font-weight:600">${esc(doc.client||'')}</div>
             ${doc.clientAddr?'<div style="font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:1px">'+doc.clientAddr+'</div>':''}
@@ -8070,7 +8070,7 @@ function renderClientViewer(doc){
         </div>
         <div class="inv-doc-meta">
           <div class="inv-meta-item"><div class="inv-meta-label">${label} #</div><div class="inv-meta-val">${esc(doc.id||'')}</div></div>
-          <div class="inv-meta-item"><div class="inv-meta-label">Date</div><div class="inv-meta-val">${esc(doc.date||'')}</div></div>
+          <div class="inv-meta-item" style="text-align:right"><div class="inv-meta-label">Date</div><div class="inv-meta-val">${esc(doc.date||'')}</div></div>
           ${doc.terms?'<div class="inv-meta-item"><div class="inv-meta-label">Terms</div><div class="inv-meta-val">'+esc(termsDisplayText(doc,doc.type))+'</div></div>':''}
         </div>
         ${linesHtml}
