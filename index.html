@@ -8884,7 +8884,12 @@ function renderHomeStats(){
   const jobsEl  = document.getElementById('home-stat-jobs');
   const outEl   = document.getElementById('home-stat-out');
   const estEl   = document.getElementById('home-stat-est');
-  const revenue     = invoices.filter(inv=>invoiceDisplayStatus(inv)==='Paid').reduce((s,inv)=>s+(Number(inv.total)||0),0);
+  const _now=new Date(),_cm=_now.getMonth(),_cy=_now.getFullYear();
+  const revenue     = invoices.filter(inv=>{
+    if(invoiceDisplayStatus(inv)!=='Paid') return false;
+    const d=parseInvoiceDate(inv.paidAt||inv.paid_at||inv.date||inv.issue_date);
+    return d&&d.getMonth()===_cm&&d.getFullYear()===_cy;
+  }).reduce((s,inv)=>s+(Number(inv.total)||0),0);
   const activeJobs  = invoices.filter(inv=>['Sent','Viewed','Overdue'].includes(invoiceDisplayStatus(inv))).length;
   const outstanding = invoices.reduce((s,inv)=>s+invoiceOutstandingAmount(inv),0);
   const sentEsts = estimates.filter(e=>e.status&&e.status!=='Draft').length;
