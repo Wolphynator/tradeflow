@@ -5501,7 +5501,8 @@ async function convertEstimateToInvoice(){
       total,balance_due:total,
       vat_enabled:!!est.vatEnabled,vat_rate:est.vatRate||20,
       terms:invoiceTerms,issue_date:gbToISO(invoiceDate),due_date:gbToISO(dueDate)||null,
-      currency_code:currentCurrency?.code||'GBP'
+      currency_code:currentCurrency?.code||'GBP',
+      payment_instructions:paymentInstructionLines('invoice').join('\n')
     }).select().single();
     if(invErr) throw invErr;
 
@@ -6581,7 +6582,8 @@ async function saveNewEstimate(){
     markup_amount:newEstimate.markup,total,
     vat_enabled:newEstimate.vatEnabled,vat_rate:newEstimate.vatRate,
     terms:estimateTerms,issue_date:gbToISO(estimateDate),valid_until:gbToISO(validUntil)||null,
-    currency_code:currentCurrency?.code||'GBP'
+    currency_code:currentCurrency?.code||'GBP',
+    payment_instructions:paymentInstructionLines('estimate').join('\n')
   });
 
   const _buildLines=(estUUID)=>newEstimate.lines.map((l,i)=>({
@@ -7128,7 +7130,8 @@ async function saveNewInvoice(){
     total,balance_due:balance,
     vat_enabled:newInvoice.vatEnabled,vat_rate:newInvoice.vatRate,
     terms:invoiceTerms,issue_date:gbToISO(invoiceDate),due_date:gbToISO(dueDate)||null,
-    currency_code:currentCurrency?.code||'GBP'
+    currency_code:currentCurrency?.code||'GBP',
+    payment_instructions:paymentInstructionLines('invoice').join('\n')
   });
 
   const _buildLines=(invoiceUUID)=>newInvoice.lines.map((l,i)=>({
@@ -7472,6 +7475,8 @@ async function saveDocumentToSupabase(doc,type){
 
 function transformShareViewData(data){
   const{doc,type,lines,biz}=data;
+  // Use the document's saved currency so amounts display correctly for the client
+  try{setCurrencyPreference(doc.currency_code||'GBP')}catch(e){}
   const isInv=type!=='estimate';
   const dateRaw=isInv?doc.issue_date:doc.created_at;
   const viewerLines=(lines||[]).map(l=>({
@@ -7498,7 +7503,8 @@ function transformShareViewData(data){
     tax:doc.tax_amount?money(Number(doc.tax_amount)):null,
     total:money(Number(doc.total)||0),balanceDue:money(Number(doc.balance_due||doc.total)||0),
     shareToken:doc.share_token,_supabaseType:type,topic:data?.ntfy_topic||null,businessId:doc.business_id||null,
-    status:doc.status||'',
+    status:doc.status||'',currency_code:doc.currency_code||'GBP',
+    paymentInstructions:(doc.payment_instructions||'').split('\n').filter(Boolean),
     signedAt:doc.signed_at||null,signedBy:doc.signed_by||null,signatureData:doc.signature_data||null,
     declinedAt:doc.declined_at||null,declinedReason:doc.declined_reason||null
   };
@@ -8048,15 +8054,15 @@ function renderClientViewer(doc){
     <div class="vw-body">
       <div class="inv-doc" style="margin:0 0 14px">
         <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
-          <div style="min-width:0;display:flex;gap:10px;align-items:flex-start">
+          <div style="flex:1;min-width:0;display:flex;gap:10px;align-items:flex-start">
             ${doc.logo?'<img src="'+doc.logo+'" alt="Company logo" style="width:42px;height:42px;border-radius:8px;object-fit:cover;border:1px solid var(--border);flex-shrink:0">':''}
-            <div><div style="font-size:13px;font-weight:700;color:var(--brand)">${esc(doc.from||'')}</div>
+            <div style="min-width:0;word-break:break-word"><div style="font-size:13px;font-weight:700;color:var(--brand)">${esc(doc.from||'')}</div>
             ${doc.fromLine2?'<div style="font-size:11.5px;color:var(--muted);margin-top:1px">'+esc(doc.fromLine2)+'</div>':''}
             ${doc.fromAddr?'<div style="font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:2px">'+esc(doc.fromAddr)+'</div>':''}
             ${doc.fromPhone?'<div style="font-size:11.5px;color:var(--muted);margin-top:1px">'+esc(doc.fromPhone)+'</div>':''}
             ${doc.fromEmail?'<div style="font-size:11.5px;color:var(--muted);margin-top:1px">'+esc(doc.fromEmail)+'</div>':''}</div>
           </div>
-          <div style="text-align:right;flex-shrink:0">
+          <div style="text-align:right;flex-shrink:0;max-width:45%;word-break:break-word">
             <div style="font-size:11px;color:var(--muted);margin-bottom:2px">Bill To</div>
             <div style="font-size:13px;font-weight:600">${esc(doc.client||'')}</div>
             ${doc.clientAddr?'<div style="font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:1px">'+doc.clientAddr+'</div>':''}
@@ -8127,6 +8133,7 @@ function renderClientViewer(doc){
         </div>`:''}
       </div>
     </div>
+      ${doc.paymentInstructions&&doc.paymentInstructions.length?'<div style="margin:0 0 12px;padding:12px 16px;border-top:1px solid var(--border)"><div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Payment Instructions</div><div style="font-size:12px;color:var(--text);line-height:1.7">'+doc.paymentInstructions.map(esc).join('<br>')+'</div></div>':''}
       <button class="vw-pdf-btn" id="vw-pdf-btn" onclick="downloadPDF('viewer')">&#128196; Download PDF</button>
     <div class="vw-footer">Sent via TradeFlow &nbsp;&middot;&nbsp; Powered by Claude AI</div>
   `;
