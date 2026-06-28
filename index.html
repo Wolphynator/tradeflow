@@ -734,7 +734,35 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
         </div>
         <button class="btn-p" id="signin-btn" style="width:100%;margin-top:8px" onclick="handleSignIn()">Sign In</button>
       </div>
+      <div class="auth-switch" style="margin-top:10px"><span class="auth-link" onclick="goTo('screen-forgot-password')">Forgot password?</span></div>
       <div class="auth-switch">Don't have an account? <span class="auth-link" onclick="goTo('screen-signup')">Sign up free</span></div>
+    </div>
+  </div>
+</div>
+
+<!--  SCREEN: FORGOT PASSWORD -->
+<div id="screen-forgot-password" class="screen">
+  <div class="top-nav">
+    <div class="back-btn back-arrow" onclick="goTo('screen-signin')" aria-label="Back">←</div>
+    <div class="nav-block" style="flex:1;justify-content:center;text-align:center">
+      <div class="nav-title">TradeFlow</div>
+    </div>
+    <div style="width:40px"></div>
+  </div>
+  <div class="scroll pad">
+    <div class="auth-wrap">
+      <div class="auth-logo-mark">TF</div>
+      <div class="auth-headline">Reset password</div>
+      <div class="auth-sub">Enter your email and we'll send a reset link.</div>
+      <div class="auth-card">
+        <div id="forgot-pw-error" class="auth-error"></div>
+        <div class="auth-field">
+          <label class="auth-label" for="forgot-pw-email">Email</label>
+          <input class="client-line-input" id="forgot-pw-email" type="email" placeholder="your@email.com" autocomplete="email" inputmode="email">
+        </div>
+        <button class="btn-p" id="btn-forgot-pw-send" style="width:100%;margin-top:8px" onclick="handleForgotPassword()">Send Reset Link</button>
+      </div>
+      <div class="auth-switch"><span class="auth-link" onclick="goTo('screen-signin')">Back to Sign In</span></div>
     </div>
   </div>
 </div>

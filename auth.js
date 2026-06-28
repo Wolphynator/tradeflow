@@ -549,6 +549,41 @@ function updateSidebarUser() {
   });
 }
 
+// ─── Forgot password (sign-in screen) ─────────────────────────────────────
+let _forgotPwCooldown = null;
+async function handleForgotPassword() {
+  const email = document.getElementById('forgot-pw-email')?.value.trim() || '';
+  const btn   = document.getElementById('btn-forgot-pw-send');
+  clearAuthError('forgot-pw-error');
+  if (!email) { showAuthError('forgot-pw-error', 'Please enter your email address.'); return; }
+  const check = validateAuthEmail(email);
+  if (!check.valid) { showAuthError('forgot-pw-error', check.message); return; }
+  if (btn?.disabled) return;
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+  const redirectTo = window.location.origin && window.location.origin !== 'null'
+    ? window.location.origin + window.location.pathname : undefined;
+  const { error } = await sb.auth.resetPasswordForEmail(email, redirectTo ? { redirectTo } : {});
+  if (error) {
+    showAuthError('forgot-pw-error', humanizeAuthError(error));
+    if (btn) { btn.disabled = false; btn.textContent = 'Send Reset Link'; }
+    return;
+  }
+  showAuthError('forgot-pw-error', '✓ Reset link sent — check your email.');
+  document.getElementById('forgot-pw-error')?.classList.add('show');
+  let secs = 60;
+  if (btn) btn.textContent = 'Resend in ' + secs + 's';
+  clearInterval(_forgotPwCooldown);
+  _forgotPwCooldown = setInterval(() => {
+    secs--;
+    if (secs <= 0) {
+      clearInterval(_forgotPwCooldown);
+      if (btn) { btn.disabled = false; btn.textContent = 'Send Reset Link'; }
+    } else {
+      if (btn) btn.textContent = 'Resend in ' + secs + 's';
+    }
+  }, 1000);
+}
+
 // ─── Set new password (password recovery flow) ────────────────────────────
 const RESET_PW_RULES = [
   ['rpwc-len', pw => pw.length >= 8,   'At least 8 characters'],
@@ -674,6 +709,7 @@ async function signOut() {
 // ─── Public API ────────────────────────────────────────────────────────────
 window.handleSignIn            = handleSignIn;
 window.handleSignUp            = handleSignUp;
+window.handleForgotPassword    = handleForgotPassword;
 window.handleSetNewPassword    = handleSetNewPassword;
 window.updateResetPwChecklist  = updateResetPwChecklist;
 window.signOut                 = signOut;
