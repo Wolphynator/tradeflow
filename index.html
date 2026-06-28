@@ -6586,7 +6586,9 @@ async function saveNewEstimate(){
     renderEstimateList();
     showManageToast('Estimate saved as draft');
     _resetForm();
-    goTo('screen-estimates');
+    const _estFormIdx=hist.lastIndexOf('screen-new-estimate');
+    if(_estFormIdx>=0) hist.splice(_estFormIdx,1);
+    openEstimateDetail(0);
   }catch(e){
     console.error('saveNewEstimate:',e);
     showManageToast('Could not save estimate');
@@ -7142,6 +7144,8 @@ async function saveNewInvoice(){
     if(taxRateEl) taxRateEl.value='0';
     try{renderNewInvoice();}catch(e){}
     _releaseSaveBtn();
+    const _invFormIdx=hist.lastIndexOf('screen-new-invoice');
+    if(_invFormIdx>=0) hist.splice(_invFormIdx,1);
     openInvoiceDetail(0);
     showManageToast('Invoice saved');
   }catch(e){
