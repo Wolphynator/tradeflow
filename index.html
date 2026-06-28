@@ -8188,6 +8188,7 @@ function clearSignature(){
 let _vwDeclineReason='';
 
 function vwShowSection(type){
+  const alreadyOpen=document.getElementById('vw-'+type+'-panel')?.classList.contains('open');
   ['accept','decline','query'].forEach(p=>{
     const el=document.getElementById('vw-'+p+'-panel');
     if(el) el.classList.toggle('open',p===type);
@@ -8195,8 +8196,8 @@ function vwShowSection(type){
   document.querySelectorAll('.vw-resp-btns button').forEach(b=>b.classList.remove('vw-resp-selected'));
   const sel=document.querySelector('.vw-resp-'+type);
   if(sel) sel.classList.add('vw-resp-selected');
-  if(type==='accept'){
-    // Clone canvas to strip any stale event listeners, then re-init
+  if(type==='accept'&&!alreadyOpen){
+    // Only init pad on first open — re-tapping Accept won't wipe the drawn signature
     const old=document.getElementById('vw-sig-canvas');
     if(old){const fresh=old.cloneNode(false);old.parentNode.replaceChild(fresh,old);}
     setTimeout(()=>initSignaturePad(),80);
@@ -8260,7 +8261,9 @@ async function submitSignature(){
     return;
   }
   const doc=_viewerDoc;
-  // Compress signature to JPEG at half canvas size to stay under Supabase RPC size limits
+  const submitBtn=document.querySelector('.vw-sig-submit');
+  if(submitBtn){submitBtn.disabled=true;submitBtn.textContent='Saving...';}
+
   const _compress=()=>{
     const offscreen=document.createElement('canvas');
     offscreen.width=Math.round(_sigCanvas.width/2);
@@ -8278,22 +8281,49 @@ async function submitSignature(){
   const label=doc&&doc.type==='invoice'?'Invoice':'Estimate';
   const from=doc&&doc.from?esc(doc.from):'Your contractor';
   const area=document.getElementById('vw-action-area');
-  if(area) area.innerHTML=
-    '<div class="vw-signed-card">'+
-      '<div class="vw-signed-check">&#10003;</div>'+
-      '<div class="vw-signed-title">Signed &amp; Accepted</div>'+
-      '<div class="vw-signed-meta">'+label+' '+(doc?esc(doc.id||''):'')+'&nbsp;&middot;&nbsp;'+dateStr+' at '+timeStr+'</div>'+
-      '<div class="vw-sig-preview-wrap"><img src="'+sigDataUrl+'" class="vw-sig-preview" id="vw-final-sig" alt="Signature"></div>'+
-      '<div class="vw-signed-notice">'+from+' has been notified of your acceptance.</div>'+
-    '</div>';
-  const pdfBtn=document.getElementById('vw-pdf-btn');
-  if(pdfBtn){pdfBtn.innerHTML='&#128196; Download Signed PDF';pdfBtn.style.background='var(--brand)';pdfBtn.style.color='white';}
-  // Sign via Supabase for token-backed estimate links
+
+  // Save to Supabase FIRST — only show success if it saved
   if(doc?.shareToken&&doc?.type==='estimate'){
-    const{data:rpcData}=await sb.rpc('sign_estimate',{p_token:doc.shareToken,p_signature:sigDataUrl,p_signed_by:doc.client||'Client'}).catch(()=>({}));
+    const{data:rpcData,error:rpcErr}=await sb.rpc('sign_estimate',{
+      p_token:doc.shareToken,p_signature:sigDataUrl,p_signed_by:doc.client||'Client'
+    });
+    if(rpcErr||!rpcData?.success){
+      if(submitBtn){submitBtn.disabled=false;submitBtn.textContent='Sign & Accept';}
+      if(area){
+        const errBox=document.createElement('div');
+        errBox.style.cssText='margin:8px 0;padding:10px 14px;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;font-size:13px;color:#dc2626;text-align:center';
+        errBox.textContent=(rpcErr?.message||rpcData?.error||'Could not save — please try again.');
+        const sigWrap=document.querySelector('.vw-sig-wrap');
+        if(sigWrap) sigWrap.insertAdjacentElement('beforebegin',errBox);
+      }
+      return;
+    }
+    // Saved successfully — lock the UI
+    _viewerDoc={..._viewerDoc,signedAt:new Date().toISOString(),signedBy:doc.client||'Client',signatureData:sigDataUrl};
+    if(area) area.innerHTML=
+      '<div class="vw-signed-card">'+
+        '<div class="vw-signed-check">&#10003;</div>'+
+        '<div class="vw-signed-title">Signed &amp; Accepted</div>'+
+        '<div class="vw-signed-meta">'+label+' '+(doc?esc(doc.id||''):'')+'&nbsp;&middot;&nbsp;'+dateStr+' at '+timeStr+'</div>'+
+        '<div class="vw-sig-preview-wrap"><img src="'+sigDataUrl+'" class="vw-sig-preview" alt="Signature"></div>'+
+        '<div class="vw-signed-notice">'+from+' has been notified of your acceptance.</div>'+
+      '</div>';
+    const pdfBtn=document.getElementById('vw-pdf-btn');
+    if(pdfBtn){pdfBtn.innerHTML='&#128196; Download Signed PDF';pdfBtn.style.background='var(--brand)';pdfBtn.style.color='white';}
     notifyContractor({...doc,topic:doc.topic||rpcData?.ntfy_topic},'signed').catch(()=>{});
-  } else if(doc&&doc.topic){
-    await notifyContractor(doc,'signed');
+  } else {
+    // Legacy non-token path — show success directly (no DB to lock)
+    if(area) area.innerHTML=
+      '<div class="vw-signed-card">'+
+        '<div class="vw-signed-check">&#10003;</div>'+
+        '<div class="vw-signed-title">Signed &amp; Accepted</div>'+
+        '<div class="vw-signed-meta">'+label+' '+(doc?esc(doc.id||''):'')+'&nbsp;&middot;&nbsp;'+dateStr+' at '+timeStr+'</div>'+
+        '<div class="vw-sig-preview-wrap"><img src="'+sigDataUrl+'" class="vw-sig-preview" alt="Signature"></div>'+
+        '<div class="vw-signed-notice">'+from+' has been notified of your acceptance.</div>'+
+      '</div>';
+    const pdfBtn=document.getElementById('vw-pdf-btn');
+    if(pdfBtn){pdfBtn.innerHTML='&#128196; Download Signed PDF';pdfBtn.style.background='var(--brand)';pdfBtn.style.color='white';}
+    if(doc?.topic) await notifyContractor(doc,'signed');
   }
 }
 
