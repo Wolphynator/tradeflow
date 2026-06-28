@@ -8879,22 +8879,30 @@ function downloadPDF(source){
 
   const _generate=()=>{
     setBusy();
-    const iframe=document.createElement('iframe');
-    iframe.style.cssText='position:absolute;left:-9999px;top:0;width:794px;height:1123px;border:none';
-    document.body.appendChild(iframe);
-    iframe.addEventListener('load',()=>{
-      const el=iframe.contentDocument?.querySelector('.page')||iframe.contentDocument?.body;
-      if(!el){document.body.removeChild(iframe);setDone(false);return;}
+    // Parse the print HTML and inject it into the main document so
+    // html2canvas captures it with its own CSS (not an iframe clone).
+    const parser=new DOMParser();
+    const printDoc=parser.parseFromString(html,'text/html');
+    const pageEl=document.importNode(printDoc.body.firstElementChild||printDoc.body,true);
+    const container=document.createElement('div');
+    container.style.cssText='position:fixed;left:-9999px;top:0;width:794px;background:#fff;z-index:-999';
+    container.appendChild(pageEl);
+    const styleEl=document.createElement('style');
+    styleEl.textContent=Array.from(printDoc.head.querySelectorAll('style')).map(s=>s.textContent).join('\n');
+    document.head.appendChild(styleEl);
+    document.body.appendChild(container);
+    const cleanup=()=>{try{document.body.removeChild(container);}catch(e){}try{document.head.removeChild(styleEl);}catch(e){}};
+    // Two rAF passes: wait for browser to apply injected styles and do layout
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
       html2pdf().set({
         margin:0,filename,
         image:{type:'jpeg',quality:0.95},
         html2canvas:{scale:2,useCORS:true,logging:false},
         jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
-      }).from(el).save()
-        .then(()=>{document.body.removeChild(iframe);setDone(true);})
-        .catch(()=>{document.body.removeChild(iframe);setDone(false);});
-    });
-    iframe.srcdoc=html;
+      }).from(pageEl).save()
+        .then(()=>{cleanup();setDone(true);})
+        .catch(()=>{cleanup();setDone(false);});
+    }));
   };
 
   if(typeof html2pdf!=='undefined'){_generate();return;}
