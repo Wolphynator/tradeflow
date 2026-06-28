@@ -8887,10 +8887,11 @@ function renderHomeStats(){
   const revenue     = invoices.filter(inv=>invoiceDisplayStatus(inv)==='Paid').reduce((s,inv)=>s+(Number(inv.total)||0),0);
   const activeJobs  = invoices.filter(inv=>['Sent','Viewed','Overdue'].includes(invoiceDisplayStatus(inv))).length;
   const outstanding = invoices.reduce((s,inv)=>s+invoiceOutstandingAmount(inv),0);
+  const sentEsts = estimates.filter(e=>e.status&&e.status!=='Draft').length;
   if(revEl)   revEl.textContent   = money(revenue);
   if(jobsEl)  jobsEl.textContent  = activeJobs;
   if(outEl)   outEl.textContent   = money(outstanding);
-  if(estEl)   estEl.textContent   = 0;
+  if(estEl)   estEl.textContent   = sentEsts;
 }
 
 // Badge = overdue invoices + invoices where client has viewed (status:'Viewed').
