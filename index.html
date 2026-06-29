@@ -7164,6 +7164,9 @@ function persistCompanyLogo(){
     if(companyLogo) localStorage.setItem(key,companyLogo);
     else localStorage.removeItem(key);
   }catch(e){}
+  if(typeof updateBusinessRecord==='function'&&window.currentBusiness?.id){
+    updateBusinessRecord({logo_url:companyLogo||null}).catch(()=>{});
+  }
 }
 
 function persistUserProfilePhoto(){
@@ -8107,7 +8110,7 @@ async function checkViewerMode(){
       if(!raw) return false;
       const shaped={
         doc:raw,type:docType,lines:result.lines||[],
-        biz:{name:raw.from_name||'',address:raw.from_address||'',phone:raw.from_phone||'',email:raw.from_email||'',logo_url:raw.logo_data||''}
+        biz:{name:raw.from_name||'',address:raw.from_address||'',phone:raw.from_phone||'',email:raw.from_email||'',logo_url:raw.logo_data||result.business_logo_url||''}
       };
       const viewerDoc=transformShareViewData(shaped);
       if(currentBusiness?.id&&raw.business_id&&currentBusiness.id===raw.business_id) viewerDoc.isOwnerPreview=true;

@@ -488,6 +488,15 @@ async function loadBusinessRecord(user) {
     window.currentBusiness = data;
   }
   applyBusinessPreferences();
+  // Seed companyLogo from Supabase if localStorage doesn't have it (cross-device sync)
+  if(currentBusiness?.logo_url && !window.companyLogo){
+    window.companyLogo=currentBusiness.logo_url;
+    try{
+      const logoKey=typeof userStorageKey==='function'?userStorageKey('company-logo'):null;
+      if(logoKey) localStorage.setItem(logoKey,currentBusiness.logo_url);
+    }catch(e){}
+    if(typeof window.updateLogoUI==='function') window.updateLogoUI();
+  }
   if(typeof window.initCompanyProfiles==='function') window.initCompanyProfiles();
   if(typeof window.subscribeToPush==='function') window.subscribeToPush();
 }
