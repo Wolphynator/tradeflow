@@ -1417,6 +1417,17 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
   </div>
 </div>
 
+<div class="manage-modal" id="est-already-converted-modal" onclick="if(event.target===this)closeAlreadyConvertedModal()">
+  <div class="manage-sheet">
+    <div class="manage-sheet-title">Already Converted</div>
+    <div class="manage-sheet-sub" id="est-already-converted-body">This estimate has already been converted to an invoice. You cannot convert it again.</div>
+    <div class="manage-sheet-actions">
+      <button class="cancel" onclick="closeAlreadyConvertedModal()">Close</button>
+      <button class="save" id="est-already-converted-open-btn" style="display:none" onclick="openAlreadyConvertedInvoice()">Open Invoice</button>
+    </div>
+  </div>
+</div>
+
 <!--  SCREEN: PAYMENTS  -->
 <div id="screen-payments" class="screen">
   <div class="top-nav dark-nav">
@@ -5563,10 +5574,12 @@ async function convertEstimateToInvoice(){
   if(!est||est.id==='PREVIEW'){showManageToast('Open a saved estimate first');return;}
   if(!est._id){showManageToast('Cannot convert: estimate has no Supabase ID');return;}
 
-  // Already converted — navigate to existing invoice
-  if(est.convertedInvoiceId){
-    const existingIndex=invoices.findIndex(inv=>inv._id===est.convertedInvoiceId);
-    if(existingIndex>=0){openInvoiceDetail(existingIndex);showManageToast('Opening converted invoice');return;}
+  // Hard block: already converted (by status OR by linked invoice ID)
+  if(est.status==='Converted'||est.convertedInvoiceId){
+    const existingIndex=est.convertedInvoiceId?invoices.findIndex(inv=>inv._id===est.convertedInvoiceId):-1;
+    const invNumber=existingIndex>=0?invoices[existingIndex].id:(est.invoiceId||null);
+    showAlreadyConvertedModal(est.id,invNumber,existingIndex);
+    return;
   }
 
   // Refresh signature data from Supabase in case the local estimate was loaded before the client signed
@@ -6985,6 +6998,29 @@ function continueEditAfterSignatureWarning(){
   pendingEditIndex=-1;
   if(type==='invoice') openInvoiceEditor(index,true);
   if(type==='estimate') openEstimateEditor(index,true);
+}
+
+let _alreadyConvertedInvIndex=-1;
+function showAlreadyConvertedModal(estId,invNumber,invIndex){
+  _alreadyConvertedInvIndex=invIndex;
+  const body=document.getElementById('est-already-converted-body');
+  const openBtn=document.getElementById('est-already-converted-open-btn');
+  if(body){
+    if(invNumber)
+      body.textContent='Estimate '+(estId||'')+(invNumber?' has already been converted to '+invNumber+'.':" has already been converted to an invoice.")+' A signed and agreed document cannot be converted again. Please create a new estimate if additional work is required.';
+    else
+      body.textContent='Estimate '+(estId||'')+' has already been converted to an invoice (not loaded yet). Go to the Invoices list to find it. A signed and agreed document cannot be converted again.';
+  }
+  if(openBtn) openBtn.style.display=invIndex>=0?'':'none';
+  document.getElementById('est-already-converted-modal')?.classList.add('open');
+}
+function closeAlreadyConvertedModal(){
+  document.getElementById('est-already-converted-modal')?.classList.remove('open');
+  _alreadyConvertedInvIndex=-1;
+}
+function openAlreadyConvertedInvoice(){
+  closeAlreadyConvertedModal();
+  if(_alreadyConvertedInvIndex>=0) openInvoiceDetail(_alreadyConvertedInvIndex);
 }
 
 function minimalClientFromDoc(doc){
