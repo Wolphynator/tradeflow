@@ -1341,7 +1341,7 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
         <div class="inv-tot-row" id="inv-total-row" style="display:none"><span style="font-weight:600;color:var(--text)">Total</span><span id="inv-total-val" style="font-weight:600">—</span></div>
         <div class="inv-tot-row" id="inv-deposit-row" style="display:none"><span style="color:var(--muted)">Deposit requested</span><span id="inv-deposit-val" style="color:#16a34a">—</span></div>
         <div class="inv-tot-row" id="inv-co-total-row" style="display:none"><span style="color:var(--muted)">Change Orders</span><span id="inv-co-total-val" style="color:var(--brand)">—</span></div>
-        <div class="inv-tot-row"><span style="color:var(--muted)" data-en-text="Paid">Paid</span><span id="inv-paid-total" data-en-text="GBP 0.00">GBP 0.00</span></div>
+        <div class="inv-tot-row" id="inv-paid-row" style="display:none"><span style="color:var(--muted)" data-en-text="Paid">Paid</span><span id="inv-paid-total" data-en-text="GBP 0.00">GBP 0.00</span></div>
         <div class="inv-tot-row grand"><span data-en-text="Balance Due">Balance Due</span><span id="inv-balance-total" data-en-text="GBP 2,500.00">GBP 1,975.00</span></div>
       </div>
       <div id="inv-payment-instructions" style="display:none"></div>
@@ -2227,6 +2227,8 @@ function renderDetailTotals(data,paidAmt,balance){
   const coRow=document.getElementById('inv-co-total-row');
   if(coRow) coRow.style.display=coTotal>0?'':'none';
   if(coTotal>0) setText('#inv-co-total-val','+'+money(coTotal));
+  const paidRow=document.getElementById('inv-paid-row');
+  if(paidRow) paidRow.style.display=(currentDetailType==='invoice'&&paid>0)?'':'none';
   setText('#inv-paid-total',money(paid));
   setText('#inv-balance-total',money(bal));
   renderPaymentInstructions(currentDetailType||data.type||'invoice');
