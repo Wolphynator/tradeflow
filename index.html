@@ -1354,6 +1354,7 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
         <div id="inv-notes-text" style="font-size:12px;color:var(--text);line-height:1.6"></div>
       </div>
       <div id="inv-co-section" style="display:none"></div>
+      <div id="est-invoice-link" style="display:none"></div>
       <div id="est-signed-card" style="display:none;padding:0 16px 12px"></div>
       <div id="inv-payment-summary" style="display:none"></div>
     </div>
@@ -2254,6 +2255,8 @@ function openInvoiceDetail(index){
   if(!inv) return;
   const _scard=document.getElementById('est-signed-card');
   if(_scard){_scard.style.display='none';_scard.innerHTML='';}
+  const _elink=document.getElementById('est-invoice-link');
+  if(_elink){_elink.style.display='none';_elink.innerHTML='';}
   currentDetailDoc=inv;
   currentDetailType='invoice';
   currentEstimateIndex=-1;
@@ -2332,6 +2335,40 @@ function openInvoiceDetail(index){
   goTo('screen-inv-detail');
 }
 
+function _renderEstInvoiceLink(est){
+  const el=document.getElementById('est-invoice-link');
+  if(!el) return;
+  if(est.convertedInvoiceId&&est.invoiceId){
+    const invIdx=invoices.findIndex(inv=>inv._id===est.convertedInvoiceId);
+    el.innerHTML='<div style="margin:8px 16px 0;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="'+(invIdx>=0?'openInvoiceDetail('+invIdx+')':'showManageToast(\'Invoice not loaded yet — pull down to refresh\')') +'"><div><div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Converted Invoice</div><div style="font-size:13px;font-weight:600;color:var(--brand)">'+esc(est.invoiceId)+'</div></div><div style="font-size:18px;color:var(--muted)">›</div></div>';
+    el.style.display='block';
+  } else {
+    el.style.display='none';el.innerHTML='';
+  }
+}
+
+async function _refreshEstPayments(est,cacheIndex){
+  if(!est.convertedInvoiceId) return;
+  try{
+    let paidTotal=0;
+    // Use in-memory cache if available (invoice was already opened this session)
+    if(allInvoicePayments[est.convertedInvoiceId]&&allInvoicePayments[est.convertedInvoiceId].length){
+      paidTotal=allInvoicePayments[est.convertedInvoiceId].reduce((s,p)=>s+Number(p.amount||0),0);
+    } else {
+      const{data,error}=await sb.from('payments').select('amount').eq('invoice_id',est.convertedInvoiceId);
+      if(error) return;
+      paidTotal=(data||[]).reduce((s,p)=>s+Number(p.amount||0),0);
+    }
+    if(paidTotal<=0) return;
+    // Guard: only update if the estimate detail is still showing this estimate
+    if(currentDetailType!=='estimate'||currentDetailDoc?._id!==est._id) return;
+    const origTotal=Number(est.total)||0;
+    const deposit=Number(est.deposit)||0;
+    const remaining=Math.max(0,origTotal-deposit-paidTotal);
+    renderDetailTotals(est,paidTotal,remaining);
+  }catch(e){}
+}
+
 async function _refreshEstSignedCard(estUUID,cacheIndex){
   try{
     const{data,error}=await sb.from('estimates')
@@ -2368,6 +2405,8 @@ async function openEstimateDetail(index){
   if(!est) return;
   const _scard=document.getElementById('est-signed-card');
   if(_scard){_scard.style.display='none';_scard.innerHTML='';}
+  const _elink=document.getElementById('est-invoice-link');
+  if(_elink){_elink.style.display='none';_elink.innerHTML='';}
   currentDetailDoc=est;
   currentDetailType='estimate';
   currentEstimateIndex=index;
@@ -2421,6 +2460,8 @@ async function openEstimateDetail(index){
   renderPayments();
   goTo('screen-inv-detail');
   if(est._id) _refreshEstSignedCard(est._id,index);
+  if(est.convertedInvoiceId) _refreshEstPayments(est,index);
+  _renderEstInvoiceLink(est);
 }
 let newInvoice={
   client:null,
@@ -7565,7 +7606,8 @@ function transformShareViewData(data){
     status:doc.status||'',currency_code:doc.currency_code||'GBP',
     paymentInstructions:(doc.payment_instructions||'').split('\n').filter(Boolean),
     signedAt:doc.signed_at||null,signedBy:doc.signed_by||null,signatureData:doc.signature_data||null,
-    declinedAt:doc.declined_at||null,declinedReason:doc.declined_reason||null
+    declinedAt:doc.declined_at||null,declinedReason:doc.declined_reason||null,
+    changeOrders:Array.isArray(doc.change_orders)?doc.change_orders:[]
   };
 }
 
