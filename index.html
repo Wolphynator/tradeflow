@@ -6604,6 +6604,8 @@ function removeEstimateLine(index){
 function previewNewEstimate(){
   if(!newEstimate.client&&!newEstimate.lines.length){showManageToast('Add a client or line item first');return}
   if(!requireCustomTermsDate('estimate')) return;
+  const _sc=document.getElementById('est-signed-card');if(_sc){_sc.style.display='none';_sc.innerHTML='';}
+  const _el=document.getElementById('est-invoice-link');if(_el){_el.style.display='none';_el.innerHTML='';}
   const subtotal=estimateSubtotal();
   const taxable=Math.max(0,subtotal+newEstimate.markup-newEstimate.discount);
   const vat=newEstimate.vatEnabled?taxable*(newEstimate.vatRate/100):0;
@@ -6825,6 +6827,8 @@ async function saveNewEstimate(){
 function previewNewInvoice(){
   if(!newInvoice.client&&!newInvoice.lines.length){showManageToast('Add a client or line item first');return}
   if(!requireCustomTermsDate('invoice')) return;
+  const _sc=document.getElementById('est-signed-card');if(_sc){_sc.style.display='none';_sc.innerHTML='';}
+  const _el=document.getElementById('est-invoice-link');if(_el){_el.style.display='none';_el.innerHTML='';}
   const subtotal=newInvoice.lines.reduce((sum,l)=>sum+(l.qty*l.unitPrice),0);
   const taxable=Math.max(0,subtotal+newInvoice.markup-newInvoice.discount);
   const vat=newInvoice.vatEnabled?taxable*(newInvoice.vatRate/100):0;
