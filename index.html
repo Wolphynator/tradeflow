@@ -8314,7 +8314,7 @@ function renderClientViewer(doc){
               : isConvertedInv
                   ? ''
                   : !isInv&&doc.status==='Converted'
-                    ? `<div style="margin:12px 16px 0;padding:12px 16px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;font-size:13px;color:#6b7280;text-align:center">&#128274;&nbsp; This estimate has been agreed and converted to an invoice. Signing is now closed.</div>`
+                    ? ``
                     : `<div class="vw-resp-btns">${isInv
                       ? `<button class="vw-resp-accept" onclick="vwStartAccept()">&#10003; Sign &amp; Accept</button><button class="vw-resp-query" onclick="vwShowSection('query')">? Query</button>`
                       : `<button class="vw-resp-accept" onclick="vwStartAccept()">&#10003; Accept</button><button class="vw-resp-decline" onclick="vwShowSection('decline')">&#10007; Decline</button><button class="vw-resp-query" onclick="vwShowSection('query')">? Query</button>`
