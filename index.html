@@ -7023,11 +7023,14 @@ function showAlreadyConvertedModal(estId,invNumber,invIndex,isSigned){
   const openBtn=document.getElementById('est-already-converted-open-btn');
   if(body){
     const inv=invNumber||'an invoice';
-    const sigNote=isSigned?' The client signature has been carried over to the invoice.':'';
-    if(invNumber)
-      body.textContent='Estimate '+(estId||'')+' has already been converted to '+inv+'.'+sigNote+' For any additional works, please open '+inv+' and add a Change Order.';
-    else
-      body.textContent='Estimate '+(estId||'')+' has already been converted to an invoice.'+sigNote+' Open the invoice from the Invoices list and add a Change Order for any additional works.';
+    if(isSigned){
+      if(invNumber)
+        body.textContent='Estimate '+(estId||'')+' has already been converted to '+inv+'. The client signature has been carried over to the invoice. For any additional works, please open '+inv+' and add a Change Order.';
+      else
+        body.textContent='Estimate '+(estId||'')+' has already been converted to an invoice. The client signature has been carried over. Open the invoice from the Invoices list and add a Change Order for any additional works.';
+    } else {
+      body.textContent='Estimate '+(estId||'')+' has already been converted to '+inv+'.';
+    }
   }
   if(openBtn) openBtn.style.display=invIndex>=0?'':'none';
   document.getElementById('est-already-converted-modal')?.classList.add('open');
