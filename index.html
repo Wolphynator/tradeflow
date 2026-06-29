@@ -1354,6 +1354,7 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
         <div id="inv-notes-text" style="font-size:12px;color:var(--text);line-height:1.6"></div>
       </div>
       <div id="inv-co-section" style="display:none"></div>
+      <div id="est-signed-card" style="display:none;padding:0 16px 12px"></div>
       <div id="inv-payment-summary" style="display:none"></div>
     </div>
   </div>
@@ -2134,7 +2135,7 @@ function markInvoiceSentLocal(inv){
 
 function estimateDisplayStatus(est){
   const raw=String(est?.status||'Draft').trim();
-  return ['Accepted','Sent','Viewed','Draft','Declined'].includes(raw)?raw:'Draft';
+  return ['Accepted','Converted','Sent','Viewed','Draft','Declined'].includes(raw)?raw:'Draft';
 }
 
 function estimatePendingAmount(est){
@@ -2251,6 +2252,8 @@ function setDetailNavTab(type){
 function openInvoiceDetail(index){
   const inv=invoices[index];
   if(!inv) return;
+  const _scard=document.getElementById('est-signed-card');
+  if(_scard){_scard.style.display='none';_scard.innerHTML='';}
   currentDetailDoc=inv;
   currentDetailType='invoice';
   currentEstimateIndex=-1;
@@ -2329,9 +2332,42 @@ function openInvoiceDetail(index){
   goTo('screen-inv-detail');
 }
 
-function openEstimateDetail(index){
+async function _refreshEstSignedCard(estUUID,cacheIndex){
+  try{
+    const{data,error}=await sb.from('estimates')
+      .select('signed_at,signed_by,signature_data,status')
+      .eq('id',estUUID).single();
+    if(error||!data||!data.signed_at) return;
+    if(cacheIndex>=0&&estimates[cacheIndex]&&estimates[cacheIndex]._id===estUUID){
+      estimates[cacheIndex].signedAt=data.signed_at;
+      estimates[cacheIndex].signedBy=data.signed_by||null;
+      estimates[cacheIndex].signatureData=data.signature_data||null;
+      if(currentDetailDoc&&currentDetailDoc._id===estUUID){
+        currentDetailDoc.signedAt=data.signed_at;
+        currentDetailDoc.signedBy=data.signed_by||null;
+        currentDetailDoc.signatureData=data.signature_data||null;
+      }
+    }
+    const el=document.getElementById('est-signed-card');
+    if(!el) return;
+    const dateStr=new Date(data.signed_at).toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'});
+    const estId=estimates[cacheIndex]?.id||'';
+    el.innerHTML='<div class="vw-signed-card">'
+      +'<div class="vw-signed-check">&#10003;</div>'
+      +'<div class="vw-signed-title">Signed &amp; Accepted</div>'
+      +'<div class="vw-signed-meta">'+(estId?'Estimate '+esc(estId)+' &nbsp;&middot;&nbsp; ':'')+esc(dateStr)+'</div>'
+      +(data.signature_data?'<div class="vw-sig-preview-wrap"><img src="'+data.signature_data+'" class="vw-sig-preview" alt="Signature" style="max-width:180px"></div>':'')
+      +(data.signed_by?'<div class="vw-signed-notice">Signed by '+esc(data.signed_by)+'</div>':'')
+      +'</div>';
+    el.style.display='block';
+  }catch(e){}
+}
+
+async function openEstimateDetail(index){
   const est=estimates[index];
   if(!est) return;
+  const _scard=document.getElementById('est-signed-card');
+  if(_scard){_scard.style.display='none';_scard.innerHTML='';}
   currentDetailDoc=est;
   currentDetailType='estimate';
   currentEstimateIndex=index;
@@ -2384,6 +2420,7 @@ function openEstimateDetail(index){
   renderDocumentCOs(est);
   renderPayments();
   goTo('screen-inv-detail');
+  if(est._id) _refreshEstSignedCard(est._id,index);
 }
 let newInvoice={
   client:null,
@@ -2510,7 +2547,7 @@ const managePages={
   },
   docs:{
     title:'Doc Settings',sub:'Estimate and invoice templates',hero:'Document Settings',desc:'Set default terms, footers, numbering, and branding.',
-    rows:[['▤','Invoice template','Template choices coming later','Soon'],['30','Estimate terms','Valid for 30 days','Edit'],['','Numbering','INV-001  -  EST-001','']]
+    rows:[['▤','Invoice template','Template choices coming later','Soon'],['30','Estimate terms','Valid for 30 days','Edit'],['','Numbering','INV-000001  -  EST-000001','']]
   },
   quickbooks:{
     title:'Quickbooks Sync',sub:'Accounting connection',hero:'Quickbooks Sync',desc:'Sync invoices, payments, expenses, items, and taxes.',
@@ -2560,7 +2597,7 @@ const DEFAULT_DOC_SETTINGS={
   acceptedPaymentMethods:['Bank transfer','Cash'],
   bankDetails:{accountName:'',bankName:'',sortCode:'',accountNumber:'',iban:'',swift:'',reference:'Use invoice number as reference'},
   showBankDetails:true,
-  numbering:'INV-001  -  EST-001'
+  numbering:'INV-000001  -  EST-000001'
 };
 const PAYMENT_METHOD_OPTIONS=['Bank transfer','Cash','Card','PayPal','Cheque','Other'];
 
@@ -4204,7 +4241,7 @@ function renderEstimateList(){
     {bg:'#dcfce7',color:'#15803d'},{bg:'#fef3dc',color:'#b45309'},
     {bg:'#fef2f2',color:'#dc2626'},{bg:'#f0fdf4',color:'#166534'}
   ];
-  const pillMap={Accepted:'paid',Sent:'sched',Viewed:'pend',Draft:'draft',Declined:'over'};
+  const pillMap={Accepted:'paid',Converted:'sched',Sent:'sched',Viewed:'pend',Draft:'draft',Declined:'over'};
   if(!filtered.length){
     container.innerHTML='<div style="padding:32px 16px;text-align:center;color:var(--muted);background:var(--surface);border-radius:14px;border:1px solid var(--border)">'+
       '<div style="font-size:15px;font-weight:600;margin-bottom:4px">No estimates yet</div>'+
@@ -5484,11 +5521,12 @@ async function convertEstimateToInvoice(){
 
   try{
     const newInvId=await getNextInvoiceNumber();
+    const convertedNumber=newInvId+' (ref '+est.id+')';
 
-    const{data:invRow,error:invErr}=await sb.from('invoices').insert({
+    const invInsert={
       business_id:currentBusiness.id,
       client_id:est.client_id||null,
-      number:newInvId,status:'Draft',
+      number:convertedNumber,status:'Draft',
       client_name:est.client||client?.name||'Client',
       client_address:client?clientAddressHTML(client)||'':'',
       from_name:currentBusiness?.trading_name||currentBusiness?.name||'TradeFlow',
@@ -5505,8 +5543,20 @@ async function convertEstimateToInvoice(){
       terms:invoiceTerms,issue_date:gbToISO(invoiceDate),due_date:gbToISO(dueDate)||null,
       currency_code:currentCurrency?.code||'GBP',
       payment_instructions:paymentInstructionLines('invoice').join('\n')
-    }).select().single();
+    };
+
+    const{data:invRow,error:invErr}=await sb.from('invoices').insert(invInsert).select().single();
     if(invErr) throw invErr;
+
+    // Carry over client signature if estimate was signed (requires DB migration — safe to fail)
+    if(est.signedAt&&invRow.id){
+      try{
+        await sb.from('invoices').update({
+          signed_at:est.signedAt,signed_by:est.signedBy||null,signature_data:est.signatureData||null
+        }).eq('id',invRow.id);
+        invRow.signed_at=est.signedAt;invRow.signed_by=est.signedBy||null;invRow.signature_data=est.signatureData||null;
+      }catch(e){}
+    }
 
     if(lines.length){
       const{error:lErr}=await sb.from('invoice_lines').insert(
@@ -5523,7 +5573,7 @@ async function convertEstimateToInvoice(){
     }
 
     const{error:estErr}=await sb.from('estimates').update({
-      status:'Accepted',
+      status:'Converted',
       converted_to_invoice_id:invRow.id,
       converted_at:new Date().toISOString(),
       updated_at:new Date().toISOString()
@@ -5532,7 +5582,7 @@ async function convertEstimateToInvoice(){
 
     try{sb.rpc('log_activity',{p_business_id:currentBusiness.id,p_entity_type:'estimate',
       p_entity_id:est._id,p_action:'converted',
-      p_metadata:{invoice_id:invRow.id,invoice_number:newInvId}});}catch(e){}
+      p_metadata:{invoice_id:invRow.id,invoice_number:convertedNumber}});}catch(e){}
 
     // Update local state
     invRow.invoice_lines=lines.map((l,i)=>({
@@ -5546,11 +5596,11 @@ async function convertEstimateToInvoice(){
 
     const estIdx=estimates.findIndex(e=>e._id===est._id);
     if(estIdx>=0){
-      estimates[estIdx].status='Accepted';
+      estimates[estIdx].status='Converted';
       estimates[estIdx].convertedInvoiceId=invRow.id;
-      estimates[estIdx].invoiceId=newInvId;
+      estimates[estIdx].invoiceId=convertedNumber;
     }
-    currentDetailDoc={...est,status:'Accepted',invoiceId:newInvId,convertedInvoiceId:invRow.id};
+    currentDetailDoc={...est,status:'Converted',invoiceId:convertedNumber,convertedInvoiceId:invRow.id};
 
     renderInvoiceList();
     renderEstimateList();
@@ -6609,9 +6659,10 @@ async function saveNewEstimate(){
     const existing=estimates[editingDocumentIndex];
     if(!existing._id){showManageToast('Cannot update: estimate has no Supabase ID');return;}
     try{
-      const upd=_buildSbRow(existing.id,existing.status==='Accepted'?'Draft':existing.status);
+      const upd=_buildSbRow(existing.id,(existing.status==='Accepted'||existing.status==='Converted')?'Draft':existing.status);
       delete upd.business_id;delete upd.number;
       upd.updated_at=new Date().toISOString();
+      upd.signed_at=null;upd.signed_by=null;upd.signature_data=null;
       const{error:uErr}=await sb.from('estimates').update(upd).eq('id',existing._id);
       if(uErr) throw uErr;
       await sb.from('estimate_lines').delete().eq('estimate_id',existing._id);
@@ -6633,7 +6684,7 @@ async function saveNewEstimate(){
         markup:newEstimate.markup,discount:newEstimate.discount,deposit:newEstimate.deposit,
         terms:estimateTerms,validUntil,lines:newEstimate.lines.map(l=>({...l})),
         signature:null,signatureDataUrl:null,clientSignature:null,
-        clientSignatureDataUrl:null,signed:false,signedAt:null
+        clientSignatureDataUrl:null,signed:false,signedAt:null,signedBy:null,signatureData:null
       };
       renderEstimateList();
       if(ESTIMATE_TERM_OPTIONS.includes(estimateTerms)){const _ds=getDocSettings();if(_ds.estimateTerms!==estimateTerms){setDocSettings({..._ds,estimateTerms});persistDocSettings();}}
@@ -6815,13 +6866,15 @@ function hideDetailEditBtn(){
 }
 
 function documentHasClientSignature(doc){
-  return !!(doc&&(doc.signed||doc.signedAt||doc.signature||doc.signatureDataUrl||doc.clientSignature||doc.clientSignatureDataUrl));
+  return !!(doc&&(doc.signed||doc.signedAt||doc.signatureData||doc.signature||doc.signatureDataUrl||doc.clientSignature||doc.clientSignatureDataUrl));
 }
 
 function clearClientSignature(doc){
   if(!doc) return;
   delete doc.signed;
   delete doc.signedAt;
+  delete doc.signedBy;
+  delete doc.signatureData;
   delete doc.signature;
   delete doc.signatureDataUrl;
   delete doc.clientSignature;
@@ -6962,6 +7015,7 @@ function _sbInvToLocal(row){
     lineScope:lines.map(l=>[l.name,l.description].filter(Boolean).join(' - ')).join(', '),
     lineTotal:Number(row.total)||0,schedule:'',schedulePayments:[],
     changeOrders:Array.isArray(row.change_orders)?row.change_orders:[],
+    signedAt:row.signed_at||null,signedBy:row.signed_by||null,signatureData:row.signature_data||null,
     currency_code:row.currency_code||'GBP'
   };
 }
@@ -6989,6 +7043,7 @@ function _sbEstToLocal(row){
     share_token:row.share_token||'',
     convertedInvoiceId:row.converted_to_invoice_id||null,
     invoiceId:'',
+    signedAt:row.signed_at||null,signedBy:row.signed_by||null,signatureData:row.signature_data||null,
     lines,schedule:'',schedulePayments:[],
     currency_code:row.currency_code||'GBP'
   };
@@ -7156,6 +7211,8 @@ async function saveNewInvoice(){
       upd.updated_at=new Date().toISOString();
       const{error:uErr}=await sb.from('invoices').update(upd).eq('id',existing._id);
       if(uErr) throw uErr;
+      // Clear signature fields (requires DB migration adding signed_at/signed_by/signature_data to invoices — safe to fail)
+      try{await sb.from('invoices').update({signed_at:null,signed_by:null,signature_data:null}).eq('id',existing._id);}catch(e){}
       await sb.from('invoice_lines').delete().eq('invoice_id',existing._id);
       if(newInvoice.lines.length){
         const{error:lErr}=await sb.from('invoice_lines').insert(_buildLines(existing._id));
@@ -7177,7 +7234,7 @@ async function saveNewInvoice(){
         lineScope:newInvoice.lines.map(l=>[l.name,lineDetailText(l)].filter(Boolean).join(' - ')).join(', '),
         lineTotal:total,lines:newInvoice.lines.map(l=>({...l})),
         signature:null,signatureDataUrl:null,clientSignature:null,
-        clientSignatureDataUrl:null,signed:false,signedAt:null
+        clientSignatureDataUrl:null,signed:false,signedAt:null,signedBy:null,signatureData:null
       };
       renderInvoiceList();
       showManageToast('Invoice updated');
@@ -8880,15 +8937,20 @@ function downloadPDF(source){
 }
 
 /* ── Invoice numbering (now via Supabase atomic RPC) ── */
+function _pad6(prefix,val){
+  const m=String(val).match(/^([A-Z]+-?)(\d+)$/);
+  if(m) return m[1]+m[2].padStart(6,'0');
+  return val;
+}
 async function getNextInvoiceNumber(){
   const{data,error}=await sb.rpc('get_next_invoice_number',{p_business_id:currentBusiness.id});
   if(error) throw error;
-  return data;
+  return _pad6('INV-',data);
 }
 async function getNextEstimateNumber(){
   const{data,error}=await sb.rpc('get_next_estimate_number',{p_business_id:currentBusiness.id});
   if(error) throw error;
-  return data;
+  return _pad6('EST-',data);
 }
 
 /* ── localStorage persistence ── */
