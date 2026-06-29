@@ -2329,6 +2329,25 @@ function openInvoiceDetail(index){
   setDetailNavTab('invoice');
   renderDetailTotals(inv,invoicePaymentsTotal(inv),invoiceBalance(inv));
   renderDocumentCOs(inv);
+  // Show signed card if signature was carried over from estimate
+  const _scard2=document.getElementById('est-signed-card');
+  if(_scard2){
+    if(inv.signedAt){
+      const _sd=new Date(inv.signedAt).toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'});
+      const _refMatch=typeof inv.id==='string'&&inv.id.match(/\(ref (EST-\d+)\)/);
+      const _refLabel=_refMatch?'Estimate '+_refMatch[1]+' &nbsp;&middot;&nbsp; ':'';
+      _scard2.innerHTML='<div class="vw-signed-card">'
+        +'<div class="vw-signed-check">&#10003;</div>'
+        +'<div class="vw-signed-title">Signed &amp; Accepted</div>'
+        +'<div class="vw-signed-meta">'+_refLabel+esc(_sd)+'</div>'
+        +(inv.signatureData?'<div class="vw-sig-preview-wrap"><img src="'+inv.signatureData+'" class="vw-sig-preview" alt="Signature" style="max-width:180px"></div>':'')
+        +(inv.signedBy?'<div class="vw-signed-notice">Signed by '+esc(inv.signedBy)+'</div>':'')
+        +'</div>';
+      _scard2.style.display='block';
+    } else {
+      _scard2.style.display='none';_scard2.innerHTML='';
+    }
+  }
   // Payments nav sub
   const paySub=document.getElementById('payments-nav-sub');
   if(paySub) paySub.textContent=inv.id;
