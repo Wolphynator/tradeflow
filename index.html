@@ -5578,7 +5578,7 @@ async function convertEstimateToInvoice(){
   if(est.status==='Converted'||est.convertedInvoiceId){
     const existingIndex=est.convertedInvoiceId?invoices.findIndex(inv=>inv._id===est.convertedInvoiceId):-1;
     const invNumber=existingIndex>=0?invoices[existingIndex].id:(est.invoiceId||null);
-    showAlreadyConvertedModal(est.id,invNumber,existingIndex);
+    showAlreadyConvertedModal(est.id,invNumber,existingIndex,!!est.signedAt);
     return;
   }
 
@@ -7017,15 +7017,17 @@ function continueEditAfterSignatureWarning(){
 }
 
 let _alreadyConvertedInvIndex=-1;
-function showAlreadyConvertedModal(estId,invNumber,invIndex){
+function showAlreadyConvertedModal(estId,invNumber,invIndex,isSigned){
   _alreadyConvertedInvIndex=invIndex;
   const body=document.getElementById('est-already-converted-body');
   const openBtn=document.getElementById('est-already-converted-open-btn');
   if(body){
+    const inv=invNumber||'an invoice';
+    const sigNote=isSigned?' The client signature has been carried over to the invoice.':'';
     if(invNumber)
-      body.textContent='Estimate '+(estId||'')+' has already been converted to '+(invNumber||'an invoice')+'. A signed and agreed document cannot be converted again. For any additional works, please open '+(invNumber||'the invoice')+' and add a Change Order.';
+      body.textContent='Estimate '+(estId||'')+' has already been converted to '+inv+'.'+sigNote+' For any additional works, please open '+inv+' and add a Change Order.';
     else
-      body.textContent='Estimate '+(estId||'')+' has already been converted to an invoice. A signed and agreed document cannot be converted again. Open the invoice from the Invoices list and add a Change Order for any additional works.';
+      body.textContent='Estimate '+(estId||'')+' has already been converted to an invoice.'+sigNote+' Open the invoice from the Invoices list and add a Change Order for any additional works.';
   }
   if(openBtn) openBtn.style.display=invIndex>=0?'':'none';
   document.getElementById('est-already-converted-modal')?.classList.add('open');
