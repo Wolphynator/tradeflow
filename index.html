@@ -5588,6 +5588,12 @@ async function convertEstimateToInvoice(){
     if(freshSig?.signed_at){est=Object.assign({},est,{signedAt:freshSig.signed_at,signedBy:freshSig.signed_by||null,signatureData:freshSig.signature_data||null});}
   }catch(e){}
 
+  // Block conversion if the client hasn't signed yet
+  if(!est.signedAt){
+    showManageToast('The client must accept this estimate before it can be converted to an invoice.');
+    return;
+  }
+
   const client=est.client_id?savedClients.find(c=>c.id===est.client_id):savedClients.find(c=>c.name===est.client);
   const fromAddrParts=[currentBusiness?.address_line1,currentBusiness?.address_line2,currentBusiness?.city,currentBusiness?.zip].filter(Boolean);
   const subtotal=est.subtotal??(est.lines||[]).reduce((sum,l)=>sum+((Number(l.qty)||0)*(Number(l.unitPrice)||0)),0);
@@ -8235,6 +8241,7 @@ async function checkViewerMode(){
 }
 
 function renderClientViewer(doc){
+  _otpVerified=false;_otpEmail='';
   const root=document.getElementById('viewer-root');
   const isInv=doc.type==='invoice';
   const isConvertedInv=isInv&&typeof doc.id==='string'&&doc.id.includes('(ref ');
@@ -8328,13 +8335,46 @@ function renderClientViewer(doc){
               : isConvertedInv
                   ? ''
                   : `${!isInv&&doc.status==='Converted'?`<div style="margin:12px 16px 0;padding:10px 14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;font-size:13px;color:#1e40af;text-align:center">&#8505;&nbsp; This estimate has been converted to an invoice — your signature will be applied to both documents.</div>`:''}<div class="vw-resp-btns">${isInv
-                    ? `<button class="vw-resp-accept" onclick="vwShowSection('accept')">&#10003; Sign &amp; Accept</button><button class="vw-resp-query" onclick="vwShowSection('query')">? Query</button>`
+                    ? `<button class="vw-resp-accept" onclick="vwStartAccept()">&#10003; Sign &amp; Accept</button><button class="vw-resp-query" onclick="vwShowSection('query')">? Query</button>`
                     : doc.status==='Converted'
-                      ? `<button class="vw-resp-accept" onclick="vwShowSection('accept')">&#10003; Sign &amp; Accept</button><button class="vw-resp-query" onclick="vwShowSection('query')">? Query</button>`
-                      : `<button class="vw-resp-accept" onclick="vwShowSection('accept')">&#10003; Accept</button><button class="vw-resp-decline" onclick="vwShowSection('decline')">&#10007; Decline</button><button class="vw-resp-query" onclick="vwShowSection('query')">? Query</button>`
+                      ? `<button class="vw-resp-accept" onclick="vwStartAccept()">&#10003; Sign &amp; Accept</button><button class="vw-resp-query" onclick="vwShowSection('query')">? Query</button>`
+                      : `<button class="vw-resp-accept" onclick="vwStartAccept()">&#10003; Accept</button><button class="vw-resp-decline" onclick="vwShowSection('decline')">&#10007; Decline</button><button class="vw-resp-query" onclick="vwShowSection('query')">? Query</button>`
                   }</div>`
         }
         ${!doc.signedAt&&!doc.declinedAt&&!isConvertedInv?`
+        <div id="vw-email-verify-panel" class="vw-sub-panel">
+          <div class="vw-agreement">
+            <div class="vw-agreement-title">Verify Your Identity</div>
+            <div class="vw-agreement-text">Enter the email address your contractor has on file to confirm your identity before signing.</div>
+          </div>
+          <div class="vw-sig-wrap">
+            <div class="vw-sig-label">Your email address</div>
+            <input type="email" id="vw-otp-email-input" class="vw-sig-input" placeholder="your@email.com" autocomplete="email" autocorrect="off" spellcheck="false">
+            <div id="vw-otp-email-error" style="display:none;color:#dc2626;font-size:13px;margin:6px 0 0"></div>
+            <div class="vw-sig-actions" style="margin-top:14px">
+              <button class="vw-sig-clear" onclick="vwShowSection(null)">Cancel</button>
+              <button class="vw-sig-submit" id="vw-send-otp-btn" onclick="vwSendOtp()">Send Code</button>
+            </div>
+          </div>
+        </div>
+        <div id="vw-otp-verify-panel" class="vw-sub-panel">
+          <div class="vw-agreement">
+            <div class="vw-agreement-title">Enter Verification Code</div>
+            <div class="vw-agreement-text" id="vw-otp-sent-msg">We sent a 6-digit code to your email.</div>
+          </div>
+          <div class="vw-sig-wrap">
+            <div class="vw-sig-label">6-digit code</div>
+            <input type="text" id="vw-otp-code-input" class="vw-sig-input" placeholder="000000" maxlength="6" inputmode="numeric" autocomplete="one-time-code" style="letter-spacing:6px;font-size:22px;text-align:center">
+            <div id="vw-otp-code-error" style="display:none;color:#dc2626;font-size:13px;margin:6px 0 0"></div>
+            <div class="vw-sig-actions" style="margin-top:14px">
+              <button class="vw-sig-clear" onclick="vwShowSection('email-verify')">Back</button>
+              <button class="vw-sig-submit" id="vw-verify-otp-btn" onclick="vwVerifyOtp()">Verify</button>
+            </div>
+            <div style="text-align:center;margin-top:12px">
+              <button onclick="vwResendOtp()" style="background:none;border:none;color:var(--brand);font-size:13px;cursor:pointer;text-decoration:underline;padding:0">Resend code</button>
+            </div>
+          </div>
+        </div>
         <div id="vw-accept-panel" class="vw-sub-panel">
           <div class="vw-agreement">
             <div class="vw-agreement-title">Acceptance &amp; Authorisation</div>
@@ -8509,10 +8549,89 @@ async function _renderSigToBase64(text){
 }
 
 let _vwDeclineReason='';
+let _otpVerified=false;
+let _otpEmail='';
+
+function vwStartAccept(){
+  if(_otpVerified){vwShowSection('accept');return;}
+  vwShowSection('email-verify');
+}
+
+async function vwSendOtp(){
+  const emailInput=document.getElementById('vw-otp-email-input');
+  const errEl=document.getElementById('vw-otp-email-error');
+  const btn=document.getElementById('vw-send-otp-btn');
+  const email=(emailInput?.value||'').trim().toLowerCase();
+  if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    if(emailInput) emailInput.classList.add('error');
+    if(errEl){errEl.textContent='Please enter a valid email address.';errEl.style.display='block';}
+    return;
+  }
+  emailInput?.classList.remove('error');
+  if(errEl) errEl.style.display='none';
+  if(btn){btn.disabled=true;btn.textContent='Sending…';}
+  try{
+    const{data,error}=await sb.functions.invoke('send-otp',{body:{action:'send_otp',email,share_token:_viewerDoc?.shareToken}});
+    if(error||!data?.success){
+      if(errEl){errEl.textContent=data?.error||'Failed to send code. Please try again.';errEl.style.display='block';}
+      if(btn){btn.disabled=false;btn.textContent='Send Code';}
+      return;
+    }
+    _otpEmail=email;
+    const sentMsg=document.getElementById('vw-otp-sent-msg');
+    if(sentMsg) sentMsg.textContent='We sent a 6-digit code to '+email+'.';
+    vwShowSection('otp-verify');
+    document.getElementById('vw-otp-code-input')?.focus();
+  }catch(e){
+    if(errEl){errEl.textContent='Network error. Please try again.';errEl.style.display='block';}
+    if(btn){btn.disabled=false;btn.textContent='Send Code';}
+  }
+}
+
+async function vwVerifyOtp(){
+  const codeInput=document.getElementById('vw-otp-code-input');
+  const errEl=document.getElementById('vw-otp-code-error');
+  const btn=document.getElementById('vw-verify-otp-btn');
+  const code=(codeInput?.value||'').replace(/\s/g,'');
+  if(!code||code.length!==6||!/^\d+$/.test(code)){
+    if(codeInput) codeInput.classList.add('error');
+    if(errEl){errEl.textContent='Please enter the 6-digit code.';errEl.style.display='block';}
+    return;
+  }
+  codeInput?.classList.remove('error');
+  if(errEl) errEl.style.display='none';
+  if(btn){btn.disabled=true;btn.textContent='Verifying…';}
+  try{
+    const{data,error}=await sb.rpc('verify_otp',{p_email:_otpEmail,p_code:code,p_share_token:_viewerDoc?.shareToken});
+    if(error||!data?.success){
+      if(errEl){errEl.textContent=data?.error||'Invalid or expired code. Please try again.';errEl.style.display='block';}
+      if(btn){btn.disabled=false;btn.textContent='Verify';}
+      return;
+    }
+    _otpVerified=true;
+    vwShowSection('accept');
+    document.getElementById('vw-sig-input')?.focus();
+  }catch(e){
+    if(errEl){errEl.textContent='Network error. Please try again.';errEl.style.display='block';}
+    if(btn){btn.disabled=false;btn.textContent='Verify';}
+  }
+}
+
+async function vwResendOtp(){
+  const emailInput=document.getElementById('vw-otp-email-input');
+  if(emailInput&&_otpEmail) emailInput.value=_otpEmail;
+  if(_otpEmail){
+    if(document.getElementById('vw-otp-code-input')) document.getElementById('vw-otp-code-input').value='';
+    vwShowSection('email-verify');
+    await vwSendOtp();
+  } else {
+    vwShowSection('email-verify');
+  }
+}
 
 function vwShowSection(type){
   const alreadyOpen=document.getElementById('vw-'+type+'-panel')?.classList.contains('open');
-  ['accept','decline','query'].forEach(p=>{
+  ['accept','decline','query','email-verify','otp-verify'].forEach(p=>{
     const el=document.getElementById('vw-'+p+'-panel');
     if(el) el.classList.toggle('open',p===type);
   });
@@ -8619,6 +8738,7 @@ async function submitSignature(){
       piBlock.innerHTML='<div style="margin:0 0 12px;padding:12px 16px;border-top:1px solid var(--border)"><div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Payment Instructions</div><div style="font-size:12px;color:var(--text);line-height:1.7">'+_viewerDoc.paymentInstructions.map(esc).join('<br>')+'</div></div>';
     }
     notifyContractor({...doc,topic:doc.topic||rpcData?.ntfy_topic},'signed').catch(()=>{});
+    if(_otpEmail) sb.functions.invoke('send-otp',{body:{action:'send_confirmation',email:_otpEmail,contractor_name:doc.from||'Your contractor',doc_id:doc.id||''}}).catch(()=>{});
   } else {
     // Legacy non-token path — show success directly (no DB to lock)
     if(area) area.innerHTML=
