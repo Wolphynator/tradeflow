@@ -7007,9 +7007,9 @@ function showAlreadyConvertedModal(estId,invNumber,invIndex){
   const openBtn=document.getElementById('est-already-converted-open-btn');
   if(body){
     if(invNumber)
-      body.textContent='Estimate '+(estId||'')+(invNumber?' has already been converted to '+invNumber+'.':" has already been converted to an invoice.")+' A signed and agreed document cannot be converted again. Please create a new estimate if additional work is required.';
+      body.textContent='Estimate '+(estId||'')+' has already been converted to '+(invNumber||'an invoice')+'. A signed and agreed document cannot be converted again. For any additional works, please open '+(invNumber||'the invoice')+' and add a Change Order.';
     else
-      body.textContent='Estimate '+(estId||'')+' has already been converted to an invoice (not loaded yet). Go to the Invoices list to find it. A signed and agreed document cannot be converted again.';
+      body.textContent='Estimate '+(estId||'')+' has already been converted to an invoice. A signed and agreed document cannot be converted again. Open the invoice from the Invoices list and add a Change Order for any additional works.';
   }
   if(openBtn) openBtn.style.display=invIndex>=0?'':'none';
   document.getElementById('est-already-converted-modal')?.classList.add('open');
