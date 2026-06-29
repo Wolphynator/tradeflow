@@ -2163,7 +2163,7 @@ function renderPaymentSummaryBox(data,paidAmt,outstandingAmt){
   const box=document.getElementById('inv-payment-summary');
   if(!box) return;
   const contractTotal=Number(data?.total)||0;
-  const coAmt=(data?.changeOrders||[]).reduce((s,co)=>s+Number(co.total||0),0);
+  const coAmt=(data?.changeOrders||[]).reduce((s,co)=>s+(Number(co.total)||((co.lines||[]).reduce((a,l)=>a+(Number(l.qty||1)*Number(l.unitPrice||0)),0))),0);
   const depositAmt=Number(data?.deposit)||0;
   const paid=Number(paidAmt)||0;
   const paidSoFar=paid;
@@ -2196,7 +2196,7 @@ function renderDetailTotals(data,paidAmt,balance){
   const taxAmt=Number(data.tax)||0;
   const paid=Number(paidAmt)||0;
   const markup=Number(data.markup)||0;
-  const coTotal=(data.changeOrders||[]).reduce((s,co)=>s+Number(co.total||0),0);
+  const coTotal=(data.changeOrders||[]).reduce((s,co)=>s+(Number(co.total)||((co.lines||[]).reduce((a,l)=>a+(Number(l.qty||1)*Number(l.unitPrice||0)),0))),0);
   const preTaxWithCO=Math.max(0,subtotal+markup+coTotal-discount);
   const preTaxOriginal=Math.max(0,subtotal+markup-discount);
   const coEffective=preTaxWithCO-preTaxOriginal;
@@ -5697,7 +5697,7 @@ function docEffectiveTotal(doc){
   const mup=Number(doc.markup)||0;
   const vatA=Number(doc.vat)||0;
   const taxA=Number(doc.tax)||0;
-  const coTot=(doc.changeOrders||[]).reduce((s,co)=>s+Number(co.total||0),0);
+  const coTot=(doc.changeOrders||[]).reduce((s,co)=>s+(Number(co.total)||((co.lines||[]).reduce((a,l)=>a+(Number(l.qty||1)*Number(l.unitPrice||0)),0))),0);
   return Math.max(0,sub+mup+coTot-disc)+vatA+taxA;
 }
 function docOutstandingBalance(doc,paidAmt){
@@ -8185,7 +8185,7 @@ function renderClientViewer(doc){
           const _vatR=doc.vat||0;
           const _disR=doc.discount||0;
           const _depR=doc.deposit||0;
-          const _coAmt=(doc.changeOrders||[]).reduce((s,co)=>s+Number(co.total||0),0);
+          const _coAmt=(doc.changeOrders||[]).reduce((s,co)=>s+(Number(co.total)||((co.lines||[]).reduce((a,l)=>a+(Number(l.qty||1)*Number(l.unitPrice||0)),0))),0);
           const _paidR=Number(doc.amount_paid)||0;
           const _balR=Math.max(0,_tRaw+_coAmt-_depR-_paidR);
           const _hasBk=_disR>0||_vatR>0||_depR>0||(_sRaw>0&&Math.abs(_sRaw-_tRaw)>0.005);
@@ -8207,8 +8207,8 @@ function renderClientViewer(doc){
           const _disR=doc.discount||0;
           const _depR=doc.deposit||0;
           const _paidR=Number(doc.amount_paid)||0;
-          const _coAmt=(doc.changeOrders||[]).reduce((s,co)=>s+Number(co.total||0),0);
-          if(_coAmt<=0&&_paidR<=0) return'';
+          const _coAmt=(doc.changeOrders||[]).reduce((s,co)=>Number(co.total)||((co.lines||[]).reduce((a,l)=>a+(Number(l.qty||1)*Number(l.unitPrice||0)),0))+s,0);
+          if(doc.type!=='invoice'||(_coAmt<=0&&_paidR<=0)) return'';
           const _preTaxOrig=Math.max(0,_sRaw+_mRaw-_disR);
           const _preTaxCO=Math.max(0,_sRaw+_mRaw+_coAmt-_disR);
           const _coEff=_coAmt>0?_preTaxCO-_preTaxOrig:0;
