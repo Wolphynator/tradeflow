@@ -8319,12 +8319,14 @@ function renderClientViewer(doc){
             ? `<div class="vw-done-card declined"><div class="vw-done-icon">&#10007;</div><div class="vw-done-title" style="color:#dc2626">Estimate Declined</div>${doc.declinedReason?`<div class="vw-done-notice" style="color:#dc2626">${esc(doc.declinedReason)}</div>`:''}</div>`
             : doc.isOwnerPreview
               ? `<div style="margin:16px;padding:12px 16px;background:#f0fdf4;border:1px solid #86efac;border-radius:10px;font-size:13px;color:#166534;text-align:center">&#128274; <strong>Preview mode</strong> — this is your document. Your client will see the action buttons here.</div>`
-              : `<div class="vw-resp-btns">${isConvertedInv
-                  ? `<button class="vw-resp-query" onclick="vwShowSection('query')">? Query</button>`
-                  : isInv
+              : isConvertedInv
+                  ? ''
+                  : `${!isInv&&doc.status==='Converted'?`<div style="margin:12px 16px 0;padding:10px 14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;font-size:13px;color:#1e40af;text-align:center">&#8505;&nbsp; This estimate has been converted to an invoice — your signature will be applied to both documents.</div>`:''}<div class="vw-resp-btns">${isInv
                     ? `<button class="vw-resp-accept" onclick="vwShowSection('accept')">&#10003; Sign &amp; Accept</button><button class="vw-resp-query" onclick="vwShowSection('query')">? Query</button>`
-                    : `<button class="vw-resp-accept" onclick="vwShowSection('accept')">&#10003; Accept</button><button class="vw-resp-decline" onclick="vwShowSection('decline')">&#10007; Decline</button><button class="vw-resp-query" onclick="vwShowSection('query')">? Query</button>`
-                }</div>`
+                    : doc.status==='Converted'
+                      ? `<button class="vw-resp-accept" onclick="vwShowSection('accept')">&#10003; Sign &amp; Accept</button><button class="vw-resp-query" onclick="vwShowSection('query')">? Query</button>`
+                      : `<button class="vw-resp-accept" onclick="vwShowSection('accept')">&#10003; Accept</button><button class="vw-resp-decline" onclick="vwShowSection('decline')">&#10007; Decline</button><button class="vw-resp-query" onclick="vwShowSection('query')">? Query</button>`
+                  }</div>`
         }
         ${!doc.signedAt&&!doc.declinedAt&&!isConvertedInv?`
         <div id="vw-accept-panel" class="vw-sub-panel">
@@ -8342,7 +8344,7 @@ function renderClientViewer(doc){
             </div>
           </div>
         </div>
-        ${isInv ? '' : `<div id="vw-decline-panel" class="vw-sub-panel">
+        ${isInv||doc.status==='Converted' ? '' : `<div id="vw-decline-panel" class="vw-sub-panel">
           <div class="vw-agreement">
             <div class="vw-agreement-title">Reason for Declining</div>
             <div class="vw-agreement-text">Please let us know why so we can improve.</div>
