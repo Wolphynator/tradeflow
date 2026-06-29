@@ -8193,8 +8193,8 @@ function renderClientViewer(doc){
           const _hasBk=_disR>0||_vatR>0||_depR>0||(_sRaw>0&&Math.abs(_sRaw-_tRaw)>0.005);
           let _rows='';
           if(_hasBk) _rows+='<div class="inv-tot-row"><span style="color:var(--muted)">Subtotal</span><span>'+money(_sRaw||_tRaw)+'</span></div>';
-          if(_vatR>0) _rows+='<div class="inv-tot-row"><span style="color:var(--muted)">VAT'+(doc.vatRate?' ('+doc.vatRate+'%)':'')+'</span><span>'+money(_vatR)+'</span></div>';
           if(_disR>0) _rows+='<div class="inv-tot-row"><span style="color:var(--muted)">Discount</span><span style="color:#dc2626">-'+money(_disR)+'</span></div>';
+          if(_vatR>0){const _vatOnly=doc.vatEnabled?Math.round((_sRaw+(doc.markup||0)-_disR)*(doc.vatRate||20)/100*100)/100:0;const _taxOnly=Math.round((_vatR-_vatOnly)*100)/100;if(_vatOnly>0) _rows+='<div class="inv-tot-row"><span style="color:var(--muted)">VAT ('+doc.vatRate+'%)</span><span>'+money(_vatOnly)+'</span></div>';if(_taxOnly>0.005) _rows+='<div class="inv-tot-row"><span style="color:var(--muted)">Tax</span><span>'+money(_taxOnly)+'</span></div>';if(!_vatOnly&&!_taxOnly) _rows+='<div class="inv-tot-row"><span style="color:var(--muted)">VAT</span><span>'+money(_vatR)+'</span></div>';}
           _rows+='<div class="inv-tot-row grand"><span>Total</span><span>'+esc(doc.total||'')+'</span></div>';
           if(_depR>0) _rows+='<div class="inv-tot-row"><span style="color:var(--muted)">Deposit requested</span><span style="color:#dc2626">-'+money(_depR)+'</span></div>';
           if(_coAmt>0) _rows+='<div class="inv-tot-row"><span style="color:var(--muted)">Change Orders</span><span style="color:#15803d">+'+money(_coAmt)+'</span></div>';
