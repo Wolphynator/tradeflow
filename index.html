@@ -5514,7 +5514,7 @@ function renderDocumentCOs(doc){
   const section=document.getElementById('inv-co-section');
   if(!section) return;
   const cos=doc?.changeOrders||[];
-  if(!cos.length){section.style.display='none';return;}
+  if(!cos.length){section.style.display='none';section.innerHTML='';return;}
   section.style.display='';
   section.innerHTML=cos.map((co,i)=>{
     const lines=(co.lines||[]).map(l=>{
@@ -5549,6 +5549,12 @@ async function convertEstimateToInvoice(){
     const existingIndex=invoices.findIndex(inv=>inv._id===est.convertedInvoiceId);
     if(existingIndex>=0){openInvoiceDetail(existingIndex);showManageToast('Opening converted invoice');return;}
   }
+
+  // Refresh signature data from Supabase in case the local estimate was loaded before the client signed
+  try{
+    const{data:freshSig}=await sb.from('estimates').select('signed_at,signed_by,signature_data,status').eq('id',est._id).single();
+    if(freshSig?.signed_at){est=Object.assign({},est,{signedAt:freshSig.signed_at,signedBy:freshSig.signed_by||null,signatureData:freshSig.signature_data||null});}
+  }catch(e){}
 
   const client=est.client_id?savedClients.find(c=>c.id===est.client_id):savedClients.find(c=>c.name===est.client);
   const fromAddrParts=[currentBusiness?.address_line1,currentBusiness?.address_line2,currentBusiness?.city,currentBusiness?.zip].filter(Boolean);
@@ -6936,7 +6942,10 @@ function requestEditCurrentDocument(){
   }
   const doc=pendingEditType==='invoice'?invoices[pendingEditIndex]:estimates[pendingEditIndex];
   if(!doc) return;
-  if(documentHasClientSignature(doc)){
+  const _needsWarn=documentHasClientSignature(doc)
+    ||(pendingEditType==='estimate'&&(doc.status==='Accepted'||doc.status==='Converted'))
+    ||(pendingEditType==='invoice'&&typeof doc.id==='string'&&doc.id.includes('(ref '));
+  if(_needsWarn){
     document.getElementById('edit-signature-warning-modal')?.classList.add('open');
     return;
   }
