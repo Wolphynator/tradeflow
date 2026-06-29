@@ -6978,11 +6978,23 @@ function requestEditCurrentDocument(){
   }
   const doc=pendingEditType==='invoice'?invoices[pendingEditIndex]:estimates[pendingEditIndex];
   if(!doc) return;
-  const _needsWarn=documentHasClientSignature(doc)
-    ||(pendingEditType==='estimate'&&(doc.status==='Accepted'||doc.status==='Converted'))
-    ||(pendingEditType==='invoice'&&typeof doc.id==='string'&&doc.id.includes('(ref '));
+  const _isSigned=documentHasClientSignature(doc);
+  const _isAcceptedEst=pendingEditType==='estimate'&&(doc.status==='Accepted'||doc.status==='Converted');
+  const _needsWarn=_isSigned||_isAcceptedEst;
   if(_needsWarn){
-    document.getElementById('edit-signature-warning-modal')?.classList.add('open');
+    const _modal=document.getElementById('edit-signature-warning-modal');
+    const _sub=_modal?.querySelector('.manage-sheet-sub');
+    if(_sub){
+      const _isConvertedInv=pendingEditType==='invoice'&&typeof doc.id==='string'&&doc.id.includes('(ref ');
+      if(_isConvertedInv&&_isSigned){
+        _sub.textContent='Editing this invoice will remove the client signature. The agreement made on the original estimate remains — only the signature image will be cleared from the invoice.';
+      } else if(_isAcceptedEst&&doc.status==='Converted'){
+        _sub.textContent='This estimate has already been converted to an invoice. Editing the estimate will not affect the invoice.';
+      } else {
+        _sub.textContent='This document has been signed by the client. Editing it will clear the signature. You should re-send the document for the client to sign again.';
+      }
+    }
+    _modal?.classList.add('open');
     return;
   }
   continueEditAfterSignatureWarning();
@@ -8219,6 +8231,7 @@ async function checkViewerMode(){
 function renderClientViewer(doc){
   const root=document.getElementById('viewer-root');
   const isInv=doc.type==='invoice';
+  const isConvertedInv=isInv&&typeof doc.id==='string'&&doc.id.includes('(ref ');
   const label=isInv?'Invoice':'Estimate';
   const linesHtml=isInv?renderViewerInvoiceLines(doc):renderViewerEstimateLines(doc);
   const agreementText=isInv
@@ -8306,12 +8319,14 @@ function renderClientViewer(doc){
             ? `<div class="vw-done-card declined"><div class="vw-done-icon">&#10007;</div><div class="vw-done-title" style="color:#dc2626">Estimate Declined</div>${doc.declinedReason?`<div class="vw-done-notice" style="color:#dc2626">${esc(doc.declinedReason)}</div>`:''}</div>`
             : doc.isOwnerPreview
               ? `<div style="margin:16px;padding:12px 16px;background:#f0fdf4;border:1px solid #86efac;border-radius:10px;font-size:13px;color:#166534;text-align:center">&#128274; <strong>Preview mode</strong> — this is your document. Your client will see the action buttons here.</div>`
-              : `<div class="vw-resp-btns">${isInv
-                  ? `<button class="vw-resp-accept" onclick="vwShowSection('accept')">&#10003; Sign &amp; Accept</button><button class="vw-resp-query" onclick="vwShowSection('query')">? Query</button>`
-                  : `<button class="vw-resp-accept" onclick="vwShowSection('accept')">&#10003; Accept</button><button class="vw-resp-decline" onclick="vwShowSection('decline')">&#10007; Decline</button><button class="vw-resp-query" onclick="vwShowSection('query')">? Query</button>`
+              : `<div class="vw-resp-btns">${isConvertedInv
+                  ? `<button class="vw-resp-query" onclick="vwShowSection('query')">? Query</button>`
+                  : isInv
+                    ? `<button class="vw-resp-accept" onclick="vwShowSection('accept')">&#10003; Sign &amp; Accept</button><button class="vw-resp-query" onclick="vwShowSection('query')">? Query</button>`
+                    : `<button class="vw-resp-accept" onclick="vwShowSection('accept')">&#10003; Accept</button><button class="vw-resp-decline" onclick="vwShowSection('decline')">&#10007; Decline</button><button class="vw-resp-query" onclick="vwShowSection('query')">? Query</button>`
                 }</div>`
         }
-        ${!doc.signedAt&&!doc.declinedAt?`
+        ${!doc.signedAt&&!doc.declinedAt&&!isConvertedInv?`
         <div id="vw-accept-panel" class="vw-sub-panel">
           <div class="vw-agreement">
             <div class="vw-agreement-title">Acceptance &amp; Authorisation</div>
