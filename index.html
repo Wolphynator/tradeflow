@@ -7607,7 +7607,8 @@ function transformShareViewData(data){
     paymentInstructions:(doc.payment_instructions||'').split('\n').filter(Boolean),
     signedAt:doc.signed_at||null,signedBy:doc.signed_by||null,signatureData:doc.signature_data||null,
     declinedAt:doc.declined_at||null,declinedReason:doc.declined_reason||null,
-    changeOrders:Array.isArray(doc.change_orders)?doc.change_orders:[]
+    changeOrders:Array.isArray(doc.change_orders)?doc.change_orders:[],
+    amount_paid:Number(doc.amount_paid)||0
   };
 }
 
@@ -8643,27 +8644,23 @@ ${(()=>{
   const paidAmt=Number(data.amount_paid)||0;
   const balanceAmt=Math.max(0,totalAmt-depositAmt-paidAmt);
   const schedPays=data.schedulePayments||[];
-  const hasBreakdown=!isViewer&&(discountAmt>0||vatAmt>0||taxAmt>0||depositAmt>0||schedPays.length>0);
+  const hasBreakdown=discountAmt>0||vatAmt>0||taxAmt>0||depositAmt>0||schedPays.length>0;
   let t='<div class="totals"><div class="totals-inner">';
-  if(isViewer){
-    t+='<div class="tot-row"><span>Subtotal</span><span>'+totalStr+'</span></div>';
-  } else {
-    if(hasBreakdown) t+='<div class="tot-row"><span>Subtotal</span><span>'+money(subtotalAmt)+'</span></div>';
-    if(discountAmt>0) t+='<div class="tot-row"><span>Discount</span><span style="color:#16a34a">-'+money(discountAmt)+'</span></div>';
-    if(data.vatEnabled) t+='<div class="tot-row"><span>VAT ('+escHtml(String(data.vatRate||20))+'%)</span><span>'+money(vatAmt)+'</span></div>';
-    if(data.taxEnabled) t+='<div class="tot-row"><span>Tax ('+escHtml(String(data.taxRate||0))+'%)</span><span>'+money(taxAmt)+'</span></div>';
-    t+='<div class="tot-row grand"><span>Total</span><span>'+money(totalAmt)+'</span></div>';
-    if(depositAmt>0) t+='<div class="tot-row"><span>Deposit requested</span><span style="color:#16a34a">-'+money(depositAmt)+'</span></div>';
-    const coAmt=(data.changeOrders||[]).reduce((s,co)=>s+Number(co.total||0),0);
-    if(coAmt>0) t+='<div class="tot-row"><span>Change Orders</span><span style="color:#1a5c3a">+'+money(coAmt)+'</span></div>';
-    const markupVal=Number(data.markup)||0;
-    const preTaxWithCO=Math.max(0,subtotalAmt+markupVal+coAmt-discountAmt);
-    const preTaxOrig=Math.max(0,subtotalAmt+markupVal-discountAmt);
-    const coEffective=preTaxWithCO-preTaxOrig;
-    const finalBal=Math.max(0,balanceAmt+coEffective);
-    if(depositAmt>0||coAmt>0) t+='<div class="tot-row grand"><span>Balance Due</span><span>'+money(finalBal)+'</span></div>';
-    else t+='<div class="tot-row grand"><span>Balance Due</span><span>'+money(totalAmt)+'</span></div>';
-  }
+  if(hasBreakdown) t+='<div class="tot-row"><span>Subtotal</span><span>'+money(subtotalAmt)+'</span></div>';
+  if(discountAmt>0) t+='<div class="tot-row"><span>Discount</span><span style="color:#16a34a">-'+money(discountAmt)+'</span></div>';
+  if(data.vatEnabled) t+='<div class="tot-row"><span>VAT ('+escHtml(String(data.vatRate||20))+'%)</span><span>'+money(vatAmt)+'</span></div>';
+  if(data.taxEnabled) t+='<div class="tot-row"><span>Tax ('+escHtml(String(data.taxRate||0))+'%)</span><span>'+money(taxAmt)+'</span></div>';
+  t+='<div class="tot-row grand"><span>Total</span><span>'+money(totalAmt)+'</span></div>';
+  if(depositAmt>0) t+='<div class="tot-row"><span>Deposit requested</span><span style="color:#16a34a">-'+money(depositAmt)+'</span></div>';
+  const coAmt=(data.changeOrders||[]).reduce((s,co)=>s+Number(co.total||0),0);
+  if(coAmt>0) t+='<div class="tot-row"><span>Change Orders</span><span style="color:#1a5c3a">+'+money(coAmt)+'</span></div>';
+  const markupVal=Number(data.markup)||0;
+  const preTaxWithCO=Math.max(0,subtotalAmt+markupVal+coAmt-discountAmt);
+  const preTaxOrig=Math.max(0,subtotalAmt+markupVal-discountAmt);
+  const coEffective=preTaxWithCO-preTaxOrig;
+  const finalBal=Math.max(0,balanceAmt+coEffective);
+  if(depositAmt>0||coAmt>0) t+='<div class="tot-row grand"><span>Balance Due</span><span>'+money(finalBal)+'</span></div>';
+  else t+='<div class="tot-row grand"><span>Balance Due</span><span>'+money(totalAmt)+'</span></div>';
   t+='</div></div>';
   if(schedPays.length>0&&!isViewer){
     t+='<div style="margin-top:18px"><div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Payment Schedule</div>';
@@ -8680,7 +8677,7 @@ ${paymentBlock}
 ${sigBlock}
 ${(()=>{
   const cos=data.changeOrders||[];
-  if(!cos.length||isViewer) return '';
+  if(!cos.length) return '';
   return cos.map(function(co){
     const coLines=(co.lines||[]).map(function(l){
       const lt=(Number(l.qty)||0)*(Number(l.unitPrice)||0);
@@ -8697,7 +8694,6 @@ ${(()=>{
   }).join('');
 })()}
 ${(()=>{
-  if(isViewer) return '';
   const contractTotal=Number(data.total)||0;
   const coAmt=(data.changeOrders||[]).reduce((s,co)=>s+Number(co.total||0),0);
   const depositAmt=Number(data.deposit)||0;
