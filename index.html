@@ -8179,12 +8179,52 @@ function renderClientViewer(doc){
           ${doc.terms?'<div class="inv-meta-item"><div class="inv-meta-label">Terms</div><div class="inv-meta-val">'+esc(termsDisplayText(doc,doc.type))+'</div></div>':''}
         </div>
         ${linesHtml}
-        <div class="inv-totals">
-          ${doc.subtotal&&!isInv?'<div class="inv-tot-row"><span style="color:var(--muted)">Subtotal</span><span>'+esc(doc.subtotal)+'</span></div>':''}
-          ${doc.tax&&!isInv?'<div class="inv-tot-row"><span style="color:var(--muted)">Tax</span><span>'+esc(doc.tax)+'</span></div>':''}
-          <div class="inv-tot-row grand"><span>Total</span><span>${esc(doc.total||doc.balanceDue||'')}</span></div>
-        </div>
+        ${(()=>{
+          const _tRaw=doc.totalRaw||0;
+          const _sRaw=doc.subtotalRaw||0;
+          const _vatR=doc.vat||0;
+          const _disR=doc.discount||0;
+          const _depR=doc.deposit||0;
+          const _coAmt=(doc.changeOrders||[]).reduce((s,co)=>s+Number(co.total||0),0);
+          const _paidR=Number(doc.amount_paid)||0;
+          const _balR=Math.max(0,_tRaw+_coAmt-_depR-_paidR);
+          const _hasBk=_disR>0||_vatR>0||_depR>0||(_sRaw>0&&Math.abs(_sRaw-_tRaw)>0.005);
+          let _rows='';
+          if(_hasBk) _rows+='<div class="inv-tot-row"><span style="color:var(--muted)">Subtotal</span><span>'+money(_sRaw||_tRaw)+'</span></div>';
+          if(_vatR>0) _rows+='<div class="inv-tot-row"><span style="color:var(--muted)">VAT'+(doc.vatRate?' ('+doc.vatRate+'%)':'')+'</span><span>'+money(_vatR)+'</span></div>';
+          if(_disR>0) _rows+='<div class="inv-tot-row"><span style="color:var(--muted)">Discount</span><span style="color:#dc2626">-'+money(_disR)+'</span></div>';
+          _rows+='<div class="inv-tot-row grand"><span>Total</span><span>'+esc(doc.total||'')+'</span></div>';
+          if(_depR>0) _rows+='<div class="inv-tot-row"><span style="color:var(--muted)">Deposit requested</span><span style="color:#dc2626">-'+money(_depR)+'</span></div>';
+          if(_coAmt>0) _rows+='<div class="inv-tot-row"><span style="color:var(--muted)">Change Orders</span><span style="color:#15803d">+'+money(_coAmt)+'</span></div>';
+          if(_depR>0||_coAmt>0||_paidR>0) _rows+='<div class="inv-tot-row grand" style="border-top:2px solid var(--border);margin-top:4px;padding-top:8px"><span>Balance Due</span><span style="color:var(--brand)">'+money(_balR)+'</span></div>';
+          return'<div class="inv-totals">'+_rows+'</div>';
+        })()}
         ${(()=>{const cos=doc.changeOrders||[];if(!cos.length)return'';return cos.map(co=>{const lines=(co.lines||[]).map(l=>'<div class="inv-line-item"><div class="inv-li-name">'+esc(l.name||'')+'</div>'+(l.description?'<div class="inv-li-desc">'+esc(l.description)+'</div>':'')+'<div class="inv-li-total">'+money((l.qty||0)*(l.unitPrice||0))+'</div></div>').join('');return'<div style="border-top:2px dashed var(--border);margin-top:4px"><div style="padding:10px 16px 4px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Change Order '+co.id+' &nbsp;·&nbsp; '+esc(co.date||'')+'</div>'+lines+(co.notes?'<div style="font-size:12px;color:var(--muted);margin:4px 16px 8px;padding:8px;background:var(--bg-alt,#f9fafb);border-radius:6px">'+esc(co.notes)+'</div>':'')+'<div class="inv-totals"><div class="inv-tot-row grand"><span>CO Total</span><span>'+money(co.total||0)+'</span></div></div></div>';}).join('');})()}
+        ${(()=>{
+          const _tRaw=doc.totalRaw||0;
+          const _sRaw=doc.subtotalRaw||_tRaw;
+          const _mRaw=doc.markup||0;
+          const _disR=doc.discount||0;
+          const _depR=doc.deposit||0;
+          const _paidR=Number(doc.amount_paid)||0;
+          const _coAmt=(doc.changeOrders||[]).reduce((s,co)=>s+Number(co.total||0),0);
+          if(_coAmt<=0&&_paidR<=0) return'';
+          const _preTaxOrig=Math.max(0,_sRaw+_mRaw-_disR);
+          const _preTaxCO=Math.max(0,_sRaw+_mRaw+_coAmt-_disR);
+          const _coEff=_coAmt>0?_preTaxCO-_preTaxOrig:0;
+          const _out=Math.max(0,_tRaw+_coEff-_depR-_paidR);
+          const _full=_out<=0&&_tRaw>0;
+          let _rows='<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px"><span style="color:rgba(255,255,255,.75)">Original Contract</span><span style="color:white;font-weight:600">'+esc(doc.total||'')+'</span></div>';
+          if(_coEff>0) _rows+='<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px"><span style="color:rgba(255,255,255,.75)">Approved Variations</span><span style="color:#86efac;font-weight:600">+'+money(_coEff)+'</span></div>';
+          if(_paidR>0) _rows+='<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px"><span style="color:rgba(255,255,255,.75)">Paid So Far</span><span style="color:#86efac;font-weight:600">-'+money(_paidR)+'</span></div>';
+          return'<div style="margin:12px 16px 16px;background:#1a2e1f;border-radius:12px;padding:16px 18px">'
+            +'<div style="font-size:9.5px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px">Payment Summary</div>'
+            +_rows
+            +'<div style="border-top:1px solid rgba(255,255,255,.15);margin-top:10px;padding-top:12px;display:flex;justify-content:space-between;align-items:center">'
+            +'<span style="font-size:13px;font-weight:700;color:white">Outstanding Balance</span>'
+            +'<span style="font-size:16px;font-weight:800;color:'+(_full?'#4ade80':'#ffffff')+'">'+(_full?'Paid &#10003;':money(_out))+'</span>'
+            +'</div></div>';
+        })()}
       </div>
       <div id="vw-action-area">
         ${doc.signedAt
