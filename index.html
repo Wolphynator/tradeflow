@@ -7040,8 +7040,9 @@ function closeAlreadyConvertedModal(){
   _alreadyConvertedInvIndex=-1;
 }
 function openAlreadyConvertedInvoice(){
+  const idx=_alreadyConvertedInvIndex;
   closeAlreadyConvertedModal();
-  if(_alreadyConvertedInvIndex>=0) openInvoiceDetail(_alreadyConvertedInvIndex);
+  if(idx>=0) openInvoiceDetail(idx);
 }
 
 function minimalClientFromDoc(doc){
