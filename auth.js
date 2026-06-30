@@ -664,6 +664,7 @@ async function initAuth() {
     });
     const { data: { session } } = await sb.auth.getSession();
     if (session) await onLoginSuccess(session.user);
+    if (typeof window._splashInitDone === 'function') window._splashInitDone();
     return;
   }
 
@@ -671,6 +672,7 @@ async function initAuth() {
   if (window._isRecoveryUrl) {
     window._isRecoveryUrl = false;
     goTo('screen-reset-password');
+    if (typeof window._splashInitDone === 'function') window._splashInitDone();
     sb.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT') {
         currentUser = null; currentBusiness = null;
@@ -708,6 +710,7 @@ async function initAuth() {
   } else {
     goTo('screen-signin');
   }
+  if (typeof window._splashInitDone === 'function') window._splashInitDone();
 }
 
 async function signOut() {

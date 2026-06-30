@@ -647,6 +647,89 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
 </head>
 <body>
 <script>if(location.hash.startsWith('#view/'))document.write('<style>#app{display:none!important}</style>');</script>
+
+<!-- SPLASH SCREEN -->
+<div id="tf-splash" style="position:fixed;inset:0;z-index:99999;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;opacity:1;transition:opacity 250ms ease">
+  <canvas id="tf-splash-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none"></canvas>
+  <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:0">
+    <!-- Logo -->
+    <div id="tf-splash-logo" style="opacity:0;transform:scale(0.85);transition:opacity 500ms ease,transform 600ms cubic-bezier(.34,1.56,.64,1);margin-bottom:28px">
+      <img src="/Pictures/Trades.png" alt="TradesFlow Pro" style="width:80px;height:80px;object-fit:contain;filter:drop-shadow(0 0 18px rgba(57,255,20,0.35))">
+    </div>
+    <!-- Brand name -->
+    <div style="display:flex;align-items:baseline;gap:0;font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif;font-weight:800;font-size:clamp(28px,7vw,38px);letter-spacing:3px;line-height:1">
+      <span id="tf-s-trades" style="color:#fff;opacity:0;transform:translateX(-24px);transition:opacity 400ms ease,transform 400ms cubic-bezier(.25,.46,.45,.94)">TRADES</span>
+      <span id="tf-s-flow" style="color:#39FF14;opacity:0;transition:opacity 400ms ease;text-shadow:0 0 18px rgba(57,255,20,0.7),0 0 40px rgba(57,255,20,0.3)">FLOW</span>
+      <span id="tf-s-pro" style="color:#fff;opacity:0;transform:translateX(24px);transition:opacity 400ms ease,transform 400ms cubic-bezier(.25,.46,.45,.94);font-size:0.65em;align-self:flex-start;margin-top:4px;letter-spacing:2px"> PRO</span>
+      <span id="tf-s-com" style="color:#39FF14;opacity:0;transition:opacity 350ms ease;font-size:0.42em;align-self:flex-end;margin-bottom:3px;letter-spacing:1px;text-shadow:0 0 12px rgba(57,255,20,0.6)">.COM</span>
+    </div>
+    <!-- Green underline -->
+    <div style="width:100%;height:1.5px;margin-top:10px;background:#111;border-radius:2px;overflow:hidden">
+      <div id="tf-splash-line" style="height:100%;width:0%;background:linear-gradient(90deg,transparent,#39FF14,transparent);transition:width 500ms cubic-bezier(.4,0,.2,1)"></div>
+    </div>
+    <!-- Spinner -->
+    <div id="tf-splash-spinner" style="margin-top:36px;opacity:0;transition:opacity 400ms ease">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style="animation:tf-spin 900ms linear infinite">
+        <circle cx="14" cy="14" r="11" stroke="#222" stroke-width="2.5"/>
+        <path d="M14 3 A11 11 0 0 1 25 14" stroke="#39FF14" stroke-width="2.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+  </div>
+</div>
+<style>
+@keyframes tf-spin{to{transform:rotate(360deg)}}
+</style>
+<script>
+(function(){
+  if(location.hash.startsWith('#view/')){
+    var s=document.getElementById('tf-splash');
+    if(s) s.style.display='none';
+    return;
+  }
+  var _splashReady=false,_splashMinDone=false;
+  window._splashInitDone=function(){
+    _splashReady=true;
+    if(_splashMinDone) _dismissSplash();
+  };
+  function _dismissSplash(){
+    var el=document.getElementById('tf-splash');
+    if(!el||el.dataset.dismissed) return;
+    el.dataset.dismissed='1';
+    el.style.opacity='0';
+    setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el);},260);
+  }
+  // Minimum 2 seconds
+  setTimeout(function(){_splashMinDone=true;if(_splashReady)_dismissSplash();},2000);
+  // Animation sequence
+  window.addEventListener('DOMContentLoaded',function(){
+    var logo=document.getElementById('tf-splash-logo');
+    var trades=document.getElementById('tf-s-trades');
+    var flow=document.getElementById('tf-s-flow');
+    var pro=document.getElementById('tf-s-pro');
+    var com=document.getElementById('tf-s-com');
+    var line=document.getElementById('tf-splash-line');
+    var spinner=document.getElementById('tf-splash-spinner');
+    var canvas=document.getElementById('tf-splash-canvas');
+    // Particles
+    if(canvas){
+      var ctx=canvas.getContext('2d');
+      var W=canvas.width=window.innerWidth,H=canvas.height=window.innerHeight;
+      var pts=Array.from({length:55},function(){return{x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.5+0.4,vx:(Math.random()-.5)*.25,vy:(Math.random()-.5)*.25,a:Math.random()*.5+.1}});
+      function drawParticles(){ctx.clearRect(0,0,W,H);pts.forEach(function(p){ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle='rgba(57,255,20,'+p.a+')';ctx.fill();p.x=(p.x+p.vx+W)%W;p.y=(p.y+p.vy+H)%H;});requestAnimationFrame(drawParticles);}
+      drawParticles();
+    }
+    // Sequence
+    setTimeout(function(){if(logo){logo.style.opacity='1';logo.style.transform='scale(1)';}},80);
+    setTimeout(function(){if(trades){trades.style.opacity='1';trades.style.transform='translateX(0)';}},400);
+    setTimeout(function(){if(flow)flow.style.opacity='1';},620);
+    setTimeout(function(){if(pro){pro.style.opacity='1';pro.style.transform='translateX(0)';}},780);
+    setTimeout(function(){if(com)com.style.opacity='1';},950);
+    setTimeout(function(){if(line)line.style.width='100%';},1050);
+    setTimeout(function(){if(spinner)spinner.style.opacity='1';},1200);
+  },{once:true});
+})();
+</script>
+
 <div id="app">
 
 <!--  SIDEBAR OVERLAY  -->
