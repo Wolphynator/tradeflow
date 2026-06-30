@@ -8,6 +8,7 @@ Obsidian Vault/
 
 # Screenshots
 *.png
+!Pictures/*.png
 
 # Claude Code settings
 .claude/

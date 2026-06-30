@@ -700,6 +700,8 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
   }
   // Minimum 2 seconds
   setTimeout(function(){_splashMinDone=true;if(_splashReady)_dismissSplash();},2000);
+  // Safety: always dismiss after 6 seconds no matter what
+  setTimeout(function(){_splashReady=true;_splashMinDone=true;_dismissSplash();},6000);
   // Animation sequence
   window.addEventListener('DOMContentLoaded',function(){
     var logo=document.getElementById('tf-splash-logo');
