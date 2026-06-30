@@ -1,12 +1,20 @@
 # TradeFlow — Claude Instructions
 
+## Read this first
+Before any coding or file changes:
+1. Read `Obsidian Vault/Projects/Invoice Maker/PROJECT_CONTEXT.md`.
+2. Read `Obsidian Vault/Projects/Invoice Maker/AI_DEVELOPMENT_PRINCIPLES.md` — the master AI instruction document.
+3. Read and follow the root-level `AI_DEVELOPMENT_PROTOCOL.md` for task coordination, conflict prevention, Git workflow, and execution checklists.
+Also check `TRADEFLOW_RULEBOOK.md` for project rules, but only apply approved sections.
+
 ## What this project is
 Mobile invoicing PWA for UK tradespeople. Single file: `index.html` (~8,000+ lines, vanilla JS, no framework).
 Stack: Supabase (auth + DB + Edge Functions), Cloudflare Pages, Resend (email).
 
 ## Read at session start
-1. `Obsidian Vault/Projects/Invoice Maker/HANDOFF.md` — current status, version, what's pending
-2. `Obsidian Vault/Projects/Invoice Maker/PROJECT_CONTEXT.md` — full architecture reference
+1. `Obsidian Vault/Projects/Invoice Maker/PROJECT_CONTEXT.md` — full architecture reference
+2. `Obsidian Vault/Projects/Invoice Maker/AI_DEVELOPMENT_PRINCIPLES.md` — master AI and engineering rules
+3. `Obsidian Vault/Projects/Invoice Maker/HANDOFF.md` — current status, version, what's pending
 
 ## Before touching any form, input, or public-facing field
 **Read `Obsidian Vault/Projects/Invoice Maker/SECURITY_FORM_RULES.md` first.**

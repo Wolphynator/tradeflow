@@ -669,9 +669,9 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
   <div id="tf-beam" style="position:absolute;left:0;right:0;height:2px;top:-2px;pointer-events:none;background:linear-gradient(90deg,transparent,rgba(57,255,20,0.07),rgba(57,255,20,0.14),rgba(57,255,20,0.07),transparent);animation:tf-beamscan 5s linear infinite"></div>
 
   <!-- Holographic glow halos (centered on logo zone) -->
-  <div style="position:absolute;width:min(380px,88vw);height:min(380px,88vw);border-radius:50%;background:radial-gradient(ellipse,rgba(57,255,20,0.028) 0%,transparent 70%);top:44%;left:50%;transform:translate(-50%,-50%);animation:tf-breathe 4s ease-in-out infinite;pointer-events:none"></div>
-  <div style="position:absolute;width:min(200px,52vw);height:min(200px,52vw);border-radius:50%;background:radial-gradient(ellipse,rgba(57,255,20,0.06) 0%,transparent 70%);top:44%;left:50%;transform:translate(-50%,-50%);animation:tf-breathe 4s ease-in-out infinite .6s;pointer-events:none"></div>
-  <div style="position:absolute;width:min(90px,25vw);height:min(90px,25vw);border-radius:50%;background:radial-gradient(ellipse,rgba(57,255,20,0.12) 0%,transparent 70%);top:44%;left:50%;transform:translate(-50%,-50%);animation:tf-breathe 4s ease-in-out infinite 1.2s;pointer-events:none"></div>
+  <div style="position:absolute;width:min(520px,98vw);height:min(520px,98vw);border-radius:50%;background:radial-gradient(ellipse,rgba(57,255,20,0.042) 0%,transparent 70%);top:44%;left:50%;transform:translate(-50%,-50%);animation:tf-breathe 4s ease-in-out infinite;pointer-events:none"></div>
+  <div style="position:absolute;width:min(280px,68vw);height:min(280px,68vw);border-radius:50%;background:radial-gradient(ellipse,rgba(57,255,20,0.09) 0%,transparent 70%);top:44%;left:50%;transform:translate(-50%,-50%);animation:tf-breathe 4s ease-in-out infinite .6s;pointer-events:none"></div>
+  <div style="position:absolute;width:min(120px,30vw);height:min(120px,30vw);border-radius:50%;background:radial-gradient(ellipse,rgba(57,255,20,0.18) 0%,transparent 70%);top:44%;left:50%;transform:translate(-50%,-50%);animation:tf-breathe 4s ease-in-out infinite 1.2s;pointer-events:none"></div>
 
   <!-- Content overlay (logo + brand + tagline + loader) -->
   <div style="position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;padding:0 20px;margin-top:-4%">
@@ -679,14 +679,14 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
     <!-- TF Logo — emerges from blueprint, built from CSS text -->
     <div id="tf-logo" style="opacity:0;transform:translateY(10px);transition:opacity 700ms ease,transform 800ms cubic-bezier(.34,1.2,.64,1);position:relative;text-align:center;margin-bottom:16px">
       <!-- Outer reference ring -->
-      <div style="position:absolute;inset:-32px;border-radius:50%;border:1px solid rgba(57,255,20,0.14);animation:tf-ringglow 4s ease-in-out infinite"></div>
-      <div style="position:absolute;inset:-16px;border-radius:50%;border:1px solid rgba(57,255,20,0.07)"></div>
+      <div style="position:absolute;inset:-54px;border-radius:50%;border:1px solid rgba(57,255,20,0.16);animation:tf-ringglow 4s ease-in-out infinite"></div>
+      <div style="position:absolute;inset:-28px;border-radius:50%;border:1px solid rgba(57,255,20,0.08)"></div>
       <!-- Crosshair arms -->
-      <div style="position:absolute;top:50%;left:-40px;right:-40px;height:1px;background:linear-gradient(90deg,transparent,rgba(57,255,20,0.22),rgba(57,255,20,0.22),transparent)"></div>
-      <div style="position:absolute;left:50%;top:-40px;bottom:-40px;width:1px;background:linear-gradient(180deg,transparent,rgba(57,255,20,0.22),rgba(57,255,20,0.22),transparent)"></div>
-      <!-- TF Monogram (CSS only, no image) -->
-      <div id="tf-mono" style="font-family:-apple-system,'SF Pro Display','Helvetica Neue',Arial,sans-serif;font-weight:900;font-size:clamp(78px,19vw,106px);line-height:1;letter-spacing:-5px;position:relative">
-        <span style="color:#fff;text-shadow:0 0 28px rgba(57,255,20,0.45),0 0 70px rgba(57,255,20,0.14)">T</span><span style="color:#39FF14;text-shadow:0 0 24px rgba(57,255,20,1),0 0 55px rgba(57,255,20,0.55),0 0 100px rgba(57,255,20,0.18)">F</span>
+      <div style="position:absolute;top:50%;left:-66px;right:-66px;height:1px;background:linear-gradient(90deg,transparent,rgba(57,255,20,0.28),rgba(57,255,20,0.28),transparent)"></div>
+      <div style="position:absolute;left:50%;top:-66px;bottom:-66px;width:1px;background:linear-gradient(180deg,transparent,rgba(57,255,20,0.28),rgba(57,255,20,0.28),transparent)"></div>
+      <!-- TF Monogram — large, 3D shadow depth -->
+      <div id="tf-mono" style="font-family:-apple-system,'SF Pro Display','Helvetica Neue',Arial,sans-serif;font-weight:900;font-size:clamp(120px,30vw,180px);line-height:1;letter-spacing:-10px;position:relative">
+        <span style="color:#e2e2e2;text-shadow:0 2px 0 #b0b0b0,0 3px 0 #999,0 4px 0 #888,0 6px 9px rgba(0,0,0,.65),0 0 30px rgba(57,255,20,.45),0 0 70px rgba(57,255,20,.15)">T</span><span style="color:#39FF14;text-shadow:0 2px 0 #177000,0 3px 0 #104800,0 5px 8px rgba(0,0,0,.6),0 0 16px rgba(57,255,20,1),0 0 32px rgba(57,255,20,.95),0 0 60px rgba(57,255,20,.72),0 0 110px rgba(57,255,20,.38)">F</span>
       </div>
       <!-- Blueprint projection base line -->
       <div style="height:1px;margin-top:3px;background:linear-gradient(90deg,transparent,rgba(57,255,20,0.55),rgba(57,255,20,0.8),rgba(57,255,20,0.55),transparent);animation:tf-lineflash 3.5s ease-in-out infinite"></div>
@@ -8827,7 +8827,7 @@ async function checkViewerMode(){
 }
 
 function renderClientViewer(doc){
-  _otpVerified=false;_otpEmail='';
+  _otpVerified=false;_otpEmail='';_otpVerificationToken='';_otpPendingAction='accept';
   const root=document.getElementById('viewer-root');
   const isInv=doc.type==='invoice';
   const isConvertedInv=isInv&&typeof doc.id==='string'&&doc.id.includes('(ref ');
@@ -8920,18 +8920,20 @@ function renderClientViewer(doc){
               ? `<div style="margin:16px;padding:12px 16px;background:#f0fdf4;border:1px solid #86efac;border-radius:10px;font-size:13px;color:#166534;text-align:center">&#128274; <strong>Preview mode</strong> — this is your document. Your client will see the action buttons here.</div>`
               : isConvertedInv
                   ? ''
+                  : !doc.shareToken
+                    ? `<div style="margin:16px;padding:12px 16px;background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;font-size:13px;color:#92400e;text-align:center">&#128274; This legacy link is read-only. Ask the contractor for a new secure link to respond.</div>`
                   : !isInv&&doc.status==='Converted'
                     ? ``
                     : `<div class="vw-resp-btns">${isInv
-                      ? `<button class="vw-resp-accept" onclick="vwStartAccept()">&#10003; Sign &amp; Accept</button><button class="vw-resp-query" onclick="vwShowSection('query')">? Query</button>`
-                      : `<button class="vw-resp-accept" onclick="vwStartAccept()">&#10003; Accept</button><button class="vw-resp-decline" onclick="vwShowSection('decline')">&#10007; Decline</button><button class="vw-resp-query" onclick="vwShowSection('query')">? Query</button>`
+                      ? `<button class="vw-resp-accept" onclick="vwStartVerifiedAction('accept')">&#10003; Sign &amp; Accept</button><button class="vw-resp-query" onclick="vwStartVerifiedAction('query')">? Query</button>`
+                      : `<button class="vw-resp-accept" onclick="vwStartVerifiedAction('accept')">&#10003; Accept</button><button class="vw-resp-decline" onclick="vwStartVerifiedAction('decline')">&#10007; Decline</button><button class="vw-resp-query" onclick="vwStartVerifiedAction('query')">? Query</button>`
                     }</div>`
         }
         ${!doc.signedAt&&!doc.declinedAt&&!isConvertedInv&&doc.status!=='Converted'?`
         <div id="vw-email-verify-panel" class="vw-sub-panel">
           <div class="vw-agreement">
             <div class="vw-agreement-title">Verify Your Identity</div>
-            <div class="vw-agreement-text">Enter the email address your contractor has on file to confirm your identity before signing.</div>
+            <div class="vw-agreement-text" id="vw-otp-purpose">Enter the email address your contractor has on file to confirm your identity before responding.</div>
           </div>
           <div class="vw-sig-wrap">
             <div class="vw-sig-label">Your email address</div>
@@ -8969,7 +8971,7 @@ function renderClientViewer(doc){
           </div>
           <div class="vw-sig-wrap">
             <div class="vw-sig-label">Type your full name to sign</div>
-            <input type="text" id="vw-sig-input" class="vw-sig-input" placeholder="Your full name" oninput="onSigInput(this.value)" autocomplete="name" autocorrect="off" spellcheck="false">
+            <input type="text" id="vw-sig-input" class="vw-sig-input" placeholder="Your full name" maxlength="${INPUT_LIMITS.name}" oninput="onSigInput(this.value)" autocomplete="name" autocorrect="off" spellcheck="false">
             <div class="vw-sig-preview" id="vw-sig-preview"><span class="vw-sig-preview-placeholder">Your signature will appear here</span></div>
             <div class="vw-sig-actions">
               <button class="vw-sig-clear" onclick="clearSignature()">Clear</button>
@@ -9138,9 +9140,18 @@ async function _renderSigToBase64(text){
 let _vwDeclineReason='';
 let _otpVerified=false;
 let _otpEmail='';
+let _otpVerificationToken='';
+let _otpPendingAction='accept';
 
 function vwStartAccept(){
-  if(_otpVerified){vwShowSection('accept');return;}
+  vwStartVerifiedAction('accept');
+}
+
+function vwStartVerifiedAction(action){
+  _otpPendingAction=action||'accept';
+  if(_otpVerified&&_otpVerificationToken){vwShowSection(_otpPendingAction);return;}
+  const purpose=document.getElementById('vw-otp-purpose');
+  if(purpose) purpose.textContent='Enter the email address your contractor has on file to confirm your identity before '+(_otpPendingAction==='accept'?'signing':_otpPendingAction==='decline'?'declining':'sending a query')+'.';
   vwShowSection('email-verify');
 }
 
@@ -9189,15 +9200,21 @@ async function vwVerifyOtp(){
   if(errEl) errEl.style.display='none';
   if(btn){btn.disabled=true;btn.textContent='Verifying…';}
   try{
-    const{data,error}=await sb.rpc('verify_otp',{p_email:_otpEmail,p_code:code,p_share_token:_viewerDoc?.shareToken});
+    const{data,error}=await sb.functions.invoke('send-otp',{body:{action:'verify_otp',email:_otpEmail,code,share_token:_viewerDoc?.shareToken}});
     if(error||!data?.success){
       if(errEl){errEl.textContent=data?.error||'Invalid or expired code. Please try again.';errEl.style.display='block';}
       if(btn){btn.disabled=false;btn.textContent='Verify';}
       return;
     }
+    if(!data.verification_token){
+      if(errEl){errEl.textContent='Verification could not be completed. Please try again.';errEl.style.display='block';}
+      if(btn){btn.disabled=false;btn.textContent='Verify';}
+      return;
+    }
     _otpVerified=true;
-    vwShowSection('accept');
-    document.getElementById('vw-sig-input')?.focus();
+    _otpVerificationToken=data.verification_token;
+    vwShowSection(_otpPendingAction);
+    document.getElementById(_otpPendingAction==='accept'?'vw-sig-input':_otpPendingAction==='decline'?'vw-decline-comment':'vw-query-msg')?.focus();
   }catch(e){
     if(errEl){errEl.textContent='Network error. Please try again.';errEl.style.display='block';}
     if(btn){btn.disabled=false;btn.textContent='Verify';}
@@ -9240,13 +9257,15 @@ async function submitDecline(){
   const doc=_viewerDoc;
   const comment=(document.getElementById('vw-decline-comment')?.value||'').trim();
   const btn=document.querySelector('.vw-action-submit.decline');
+  if(!_otpVerified||!_otpVerificationToken){vwStartVerifiedAction('decline');return;}
   if(btn){btn.disabled=true;btn.textContent='Declining...';}
   if(doc?.shareToken){
-    const{data:rpcData,error}=await sb.rpc('decline_estimate',{p_token:doc.shareToken,p_reason:_vwDeclineReason||null,p_comment:comment||null});
-    if(error&&!error.message?.includes('already')){
+    const{data:rpcData,error}=await sb.rpc('decline_estimate',{p_token:doc.shareToken,p_reason:_vwDeclineReason||null,p_comment:comment||null,p_verification_token:_otpVerificationToken});
+    if(error||!rpcData?.success){
       if(btn){btn.disabled=false;btn.textContent='Decline Estimate';}
       return;
     }
+    _otpVerified=false;_otpVerificationToken='';
     notifyContractor({...doc,topic:doc.topic||rpcData?.ntfy_topic},'declined').catch(()=>{});
   }
   const area=document.getElementById('vw-action-area');
@@ -9262,13 +9281,15 @@ async function submitQuery(){
   }
   const doc=_viewerDoc;
   const btn=document.querySelector('.vw-action-submit.query');
+  if(!_otpVerified||!_otpVerificationToken){vwStartVerifiedAction('query');return;}
   if(btn){btn.disabled=true;btn.textContent='Sending...';}
   if(doc?.shareToken){
-    const{data:rpcData,error}=await sb.rpc('query_document',{p_token:doc.shareToken,p_doc_type:doc.type||'estimate',p_message:msg,p_client_name:doc.client||null});
-    if(error){
+    const{data:rpcData,error}=await sb.rpc('query_document',{p_token:doc.shareToken,p_doc_type:doc.type||'estimate',p_message:msg,p_client_name:doc.client||null,p_verification_token:_otpVerificationToken});
+    if(error||!rpcData?.success){
       if(btn){btn.disabled=false;btn.textContent='Send Query';}
       return;
     }
+    _otpVerified=false;_otpVerificationToken='';
     notifyContractor({...doc,topic:doc.topic||rpcData?.ntfy_topic},'queried').catch(()=>{});
   }
   const area=document.getElementById('vw-action-area');
@@ -9282,6 +9303,7 @@ async function submitSignature(){
     return;
   }
   const doc=_viewerDoc;
+  if(!doc?.shareToken||!_otpVerified||!_otpVerificationToken){vwStartVerifiedAction('accept');return;}
   const submitBtn=document.querySelector('.vw-sig-submit');
   if(submitBtn){submitBtn.disabled=true;submitBtn.textContent='Saving...';}
   const sigDataUrl=await _renderSigToBase64(_sigText);
@@ -9292,10 +9314,12 @@ async function submitSignature(){
   const from=doc&&doc.from?esc(doc.from):'Your contractor';
   const area=document.getElementById('vw-action-area');
 
-  // Save to Supabase FIRST — only show success if it saved
-  if(doc?.shareToken&&doc?.type==='estimate'){
-    const{data:rpcData,error:rpcErr}=await sb.rpc('sign_estimate',{
-      p_token:doc.shareToken,p_signature:sigDataUrl,p_signed_by:doc.client||'Client'
+  // Save to Supabase FIRST — the RPC atomically requires and consumes the verified OTP session
+  if(doc?.shareToken){
+    const rpcName=doc.type==='invoice'?'sign_invoice':'sign_estimate';
+    const verificationToken=_otpVerificationToken;
+    const{data:rpcData,error:rpcErr}=await sb.rpc(rpcName,{
+      p_token:doc.shareToken,p_signature:sigDataUrl,p_signed_by:_sigText,p_verification_token:verificationToken
     });
     if(rpcErr||!rpcData?.success){
       if(submitBtn){submitBtn.disabled=false;submitBtn.textContent='Sign & Accept';}
@@ -9308,8 +9332,9 @@ async function submitSignature(){
       }
       return;
     }
+    _otpVerified=false;_otpVerificationToken='';
     // Saved successfully — lock the UI
-    _viewerDoc={..._viewerDoc,signedAt:new Date().toISOString(),signedBy:doc.client||'Client',signatureData:sigDataUrl};
+    _viewerDoc={..._viewerDoc,signedAt:new Date().toISOString(),signedBy:_sigText,signatureData:sigDataUrl};
     if(area) area.innerHTML=
       '<div class="vw-signed-card">'+
         '<div class="vw-signed-check">&#10003;</div>'+
@@ -9325,20 +9350,7 @@ async function submitSignature(){
       piBlock.innerHTML='<div style="margin:0 0 12px;padding:12px 16px;border-top:1px solid var(--border)"><div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Payment Instructions</div><div style="font-size:12px;color:var(--text);line-height:1.7">'+_viewerDoc.paymentInstructions.map(esc).join('<br>')+'</div></div>';
     }
     notifyContractor({...doc,topic:doc.topic||rpcData?.ntfy_topic},'signed').catch(()=>{});
-    if(_otpEmail) sb.functions.invoke('send-otp',{body:{action:'send_confirmation',email:_otpEmail,contractor_name:doc.from||'Your contractor',doc_id:doc.id||''}}).catch(()=>{});
-  } else {
-    // Legacy non-token path — show success directly (no DB to lock)
-    if(area) area.innerHTML=
-      '<div class="vw-signed-card">'+
-        '<div class="vw-signed-check">&#10003;</div>'+
-        '<div class="vw-signed-title">Signed &amp; Accepted</div>'+
-        '<div class="vw-signed-meta">'+label+' '+(doc?esc(doc.id||''):'')+'&nbsp;&middot;&nbsp;'+dateStr+' at '+timeStr+'</div>'+
-        '<div class="vw-sig-preview-wrap"><img src="'+sigDataUrl+'" class="vw-sig-preview" alt="Signature"></div>'+
-        '<div class="vw-signed-notice">'+from+' has been notified of your acceptance.</div>'+
-      '</div>';
-    const pdfBtn=document.getElementById('vw-pdf-btn');
-    if(pdfBtn){pdfBtn.innerHTML='&#128196; Download Signed PDF';pdfBtn.style.background='var(--brand)';pdfBtn.style.color='white';}
-    if(doc?.topic) await notifyContractor(doc,'signed');
+    if(_otpEmail) sb.functions.invoke('send-otp',{body:{action:'send_confirmation',verification_token:verificationToken,contractor_name:doc.from||'Your contractor',doc_id:doc.id||''}}).catch(()=>{});
   }
 }
 
