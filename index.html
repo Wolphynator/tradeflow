@@ -651,114 +651,607 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
 <script>if(location.hash.startsWith('#view/'))document.write('<style>#app{display:none!important}</style>');</script>
 
 <!-- ═══════════════════════════════════════════════════════
-     SPLASH SCREEN — Blueprint Theme
-     Config: edit SPC object to change colours / timing / speed
+     SPLASH SCREEN — Blueprint Theme v3 (Architect's Table)
+     Config: SPC object in the script below
      ═══════════════════════════════════════════════════════ -->
-<div id="tf-splash" style="position:fixed;inset:0;z-index:99999;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden;opacity:1;transition:opacity 300ms ease">
+<div id="tf-splash" style="position:fixed;inset:0;z-index:99999;background:#040404;display:flex;align-items:center;justify-content:center;overflow:hidden;opacity:1;transition:opacity 350ms ease">
 
-  <!-- Layer 1: Blueprint canvas (self-drawing architectural elevation) -->
-  <canvas id="tf-bp" style="position:absolute;inset:0;pointer-events:none"></canvas>
+  <!-- Blueprint canvas — full screen, self-drawing architectural plans -->
+  <canvas id="tf-bp" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none"></canvas>
 
-  <!-- Layer 2: Particle + scanline canvas -->
-  <canvas id="tf-pt" style="position:absolute;inset:0;pointer-events:none"></canvas>
+  <!-- Particles canvas -->
+  <canvas id="tf-pt" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none"></canvas>
 
-  <!-- Layer 3: Scan line overlay -->
-  <div style="position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(180deg,transparent 0px,transparent 3px,rgba(0,0,0,0.09) 3px,rgba(0,0,0,0.09) 4px);animation:tf-sl 6s linear infinite"></div>
+  <!-- Scanline texture -->
+  <div style="position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(180deg,transparent,transparent 3px,rgba(0,0,0,0.055) 3px,rgba(0,0,0,0.055) 4px)"></div>
 
-  <!-- Layer 4: Content -->
-  <div style="position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;padding:0 28px;width:100%;max-width:380px">
+  <!-- Moving scan beam -->
+  <div id="tf-beam" style="position:absolute;left:0;right:0;height:2px;top:-2px;pointer-events:none;background:linear-gradient(90deg,transparent,rgba(57,255,20,0.07),rgba(57,255,20,0.14),rgba(57,255,20,0.07),transparent);animation:tf-beamscan 5s linear infinite"></div>
 
-    <!-- Logo glow halo -->
-    <div id="tf-glow" style="position:absolute;width:200px;height:200px;background:radial-gradient(ellipse at 50% 60%,rgba(57,255,20,0.14) 0%,transparent 68%);top:-64px;left:50%;transform:translateX(-50%);animation:tf-pulse 3.2s ease-in-out infinite;pointer-events:none"></div>
+  <!-- Holographic glow halos (centered on logo zone) -->
+  <div style="position:absolute;width:min(380px,88vw);height:min(380px,88vw);border-radius:50%;background:radial-gradient(ellipse,rgba(57,255,20,0.028) 0%,transparent 70%);top:44%;left:50%;transform:translate(-50%,-50%);animation:tf-breathe 4s ease-in-out infinite;pointer-events:none"></div>
+  <div style="position:absolute;width:min(200px,52vw);height:min(200px,52vw);border-radius:50%;background:radial-gradient(ellipse,rgba(57,255,20,0.06) 0%,transparent 70%);top:44%;left:50%;transform:translate(-50%,-50%);animation:tf-breathe 4s ease-in-out infinite .6s;pointer-events:none"></div>
+  <div style="position:absolute;width:min(90px,25vw);height:min(90px,25vw);border-radius:50%;background:radial-gradient(ellipse,rgba(57,255,20,0.12) 0%,transparent 70%);top:44%;left:50%;transform:translate(-50%,-50%);animation:tf-breathe 4s ease-in-out infinite 1.2s;pointer-events:none"></div>
 
-    <!-- TF Logo image -->
-    <div id="tf-logo" style="opacity:0;transform:scale(0.88) translateY(6px);transition:opacity 600ms ease,transform 700ms cubic-bezier(.34,1.56,.64,1);margin-bottom:20px;position:relative;animation:none">
-      <img id="tf-logo-img" src="/Pictures/Tf design.png" alt="" width="86" height="86" style="display:block;object-fit:contain;filter:drop-shadow(0 0 20px rgba(57,255,20,0.5)) drop-shadow(0 2px 12px rgba(0,0,0,0.9))">
+  <!-- Content overlay (logo + brand + tagline + loader) -->
+  <div style="position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;padding:0 20px;margin-top:-4%">
+
+    <!-- TF Logo — emerges from blueprint, built from CSS text -->
+    <div id="tf-logo" style="opacity:0;transform:translateY(10px);transition:opacity 700ms ease,transform 800ms cubic-bezier(.34,1.2,.64,1);position:relative;text-align:center;margin-bottom:16px">
+      <!-- Outer reference ring -->
+      <div style="position:absolute;inset:-32px;border-radius:50%;border:1px solid rgba(57,255,20,0.14);animation:tf-ringglow 4s ease-in-out infinite"></div>
+      <div style="position:absolute;inset:-16px;border-radius:50%;border:1px solid rgba(57,255,20,0.07)"></div>
+      <!-- Crosshair arms -->
+      <div style="position:absolute;top:50%;left:-40px;right:-40px;height:1px;background:linear-gradient(90deg,transparent,rgba(57,255,20,0.22),rgba(57,255,20,0.22),transparent)"></div>
+      <div style="position:absolute;left:50%;top:-40px;bottom:-40px;width:1px;background:linear-gradient(180deg,transparent,rgba(57,255,20,0.22),rgba(57,255,20,0.22),transparent)"></div>
+      <!-- TF Monogram (CSS only, no image) -->
+      <div id="tf-mono" style="font-family:-apple-system,'SF Pro Display','Helvetica Neue',Arial,sans-serif;font-weight:900;font-size:clamp(78px,19vw,106px);line-height:1;letter-spacing:-5px;position:relative">
+        <span style="color:#fff;text-shadow:0 0 28px rgba(57,255,20,0.45),0 0 70px rgba(57,255,20,0.14)">T</span><span style="color:#39FF14;text-shadow:0 0 24px rgba(57,255,20,1),0 0 55px rgba(57,255,20,0.55),0 0 100px rgba(57,255,20,0.18)">F</span>
+      </div>
+      <!-- Blueprint projection base line -->
+      <div style="height:1px;margin-top:3px;background:linear-gradient(90deg,transparent,rgba(57,255,20,0.55),rgba(57,255,20,0.8),rgba(57,255,20,0.55),transparent);animation:tf-lineflash 3.5s ease-in-out infinite"></div>
+      <!-- Side callout labels -->
+      <div style="position:absolute;left:-68px;top:50%;transform:translateY(-50%);text-align:right;font-family:'Courier New',monospace;font-size:7px;color:rgba(57,255,20,0.32);letter-spacing:1px;line-height:1.7">DETAIL A<br><span style="display:block;height:1px;background:rgba(57,255,20,0.22);margin-top:3px"></span></div>
+      <div style="position:absolute;right:-68px;top:50%;transform:translateY(-50%);text-align:left;font-family:'Courier New',monospace;font-size:7px;color:rgba(57,255,20,0.32);letter-spacing:1px;line-height:1.7">REF A1<br><span style="display:block;height:1px;background:rgba(57,255,20,0.22);margin-top:3px"></span></div>
     </div>
 
-    <!-- Brand name: TRADESFLOWPRO.COM -->
-    <div style="display:flex;align-items:baseline;font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif;font-weight:800;font-size:clamp(24px,6vw,34px);letter-spacing:3px;line-height:1;margin-bottom:8px">
-      <span id="tf-w-trades" style="color:#fff;opacity:0;transform:translateX(-18px);transition:opacity 380ms ease,transform 380ms ease">TRADES</span>
-      <span id="tf-w-flow"   style="color:#39FF14;opacity:0;transition:opacity 380ms ease;text-shadow:0 0 14px rgba(57,255,20,0.85),0 0 30px rgba(57,255,20,0.3)">FLOW</span>
-      <span id="tf-w-pro"    style="color:#fff;opacity:0;transform:translateX(18px);transition:opacity 380ms ease,transform 380ms ease;font-size:.6em;align-self:flex-start;margin-top:3px;letter-spacing:2px"> PRO</span>
-      <span id="tf-w-com"    style="color:#39FF14;opacity:0;transition:opacity 320ms ease;font-size:.38em;align-self:flex-end;margin-bottom:4px;letter-spacing:1.5px;text-shadow:0 0 10px rgba(57,255,20,0.8)">.COM</span>
+    <!-- Brand name -->
+    <div style="display:flex;align-items:baseline;font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif;font-weight:800;font-size:clamp(20px,5.2vw,29px);letter-spacing:4px;margin-bottom:7px">
+      <span id="tf-wt" style="color:#fff;opacity:0;transform:translateX(-14px);transition:opacity 350ms ease,transform 350ms ease">TRADES</span>
+      <span id="tf-wf" style="color:#39FF14;opacity:0;transition:opacity 350ms ease;text-shadow:0 0 14px rgba(57,255,20,0.95),0 0 28px rgba(57,255,20,0.3)">FLOW</span>
+      <span id="tf-wp" style="color:rgba(255,255,255,0.8);opacity:0;transform:translateX(14px);transition:opacity 350ms ease,transform 350ms ease;font-size:.55em;letter-spacing:2px;align-self:flex-start;margin-top:4px"> PRO</span>
+      <span id="tf-wc" style="color:#39FF14;opacity:0;transition:opacity 300ms ease;font-size:.35em;align-self:flex-end;margin-bottom:3px;letter-spacing:2px">.COM</span>
     </div>
 
-    <!-- Animated underline -->
-    <div style="width:100%;height:1px;background:rgba(255,255,255,0.06);overflow:hidden;margin-bottom:10px">
-      <div id="tf-line" style="height:100%;width:0%;background:linear-gradient(90deg,transparent,#39FF14,rgba(57,255,20,0.4),transparent);transition:width 550ms cubic-bezier(.4,0,.2,1)"></div>
+    <!-- Underline -->
+    <div style="overflow:hidden;height:1px;width:230px;margin-bottom:9px">
+      <div id="tf-ul" style="height:100%;width:0%;background:linear-gradient(90deg,transparent,#39FF14 30%,#39FF14 70%,transparent);transition:width 520ms cubic-bezier(.4,0,.2,1)"></div>
     </div>
 
     <!-- Tagline -->
-    <div id="tf-tag" style="opacity:0;transition:opacity 500ms ease;color:rgba(255,255,255,0.28);font-size:9px;letter-spacing:2.8px;text-transform:uppercase;font-family:-apple-system,sans-serif;text-align:center;margin-bottom:30px">
+    <div id="tf-tl" style="opacity:0;transition:opacity 500ms ease;font-family:'Courier New',monospace;font-size:9px;letter-spacing:2.6px;color:rgba(255,255,255,0.2);text-transform:uppercase;text-align:center;margin-bottom:26px">
       Invoices&nbsp;&#x2022;&nbsp;Estimates&nbsp;&#x2022;&nbsp;Scheduling&nbsp;&#x2022;&nbsp;Payments
     </div>
 
-    <!-- Compass loader -->
-    <div id="tf-loader" style="opacity:0;transition:opacity 400ms ease">
-      <canvas id="tf-compass" width="40" height="40"></canvas>
+    <!-- Loading ring -->
+    <div id="tf-ld" style="opacity:0;transition:opacity 400ms ease">
+      <canvas id="tf-ring" width="44" height="44"></canvas>
     </div>
   </div>
 </div>
 
 <style>
-/* ── Splash keyframes ── */
-@keyframes tf-pulse{0%,100%{opacity:.7;transform:translateX(-50%) scale(1)}50%{opacity:1;transform:translateX(-50%) scale(1.2)}}
-@keyframes tf-float{0%,100%{transform:scale(1) translateY(0px) rotate(0deg)}35%{transform:scale(1) translateY(-3px) rotate(1.5deg)}70%{transform:scale(1) translateY(2px) rotate(-1.2deg)}}
-@keyframes tf-sl{0%{background-position:0 0}100%{background-position:0 4px}}
-@media(prefers-reduced-motion:reduce){
-  #tf-glow,#tf-logo{animation:none!important}
-  #tf-bp,#tf-pt{display:none}
-}
+@keyframes tf-breathe{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.7}50%{transform:translate(-50%,-50%) scale(1.14);opacity:1}}
+@keyframes tf-beamscan{from{top:-2px}to{top:calc(100% + 2px)}}
+@keyframes tf-ringglow{0%,100%{opacity:.4;transform:scale(1)}50%{opacity:.85;transform:scale(1.07)}}
+@keyframes tf-lineflash{0%,100%{opacity:.5}50%{opacity:1}}
+@keyframes tf-float{0%,100%{transform:translateY(0px) rotate(0deg)}38%{transform:translateY(-2px) rotate(.7deg)}74%{transform:translateY(1.5px) rotate(-.5deg)}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition-duration:1ms!important}}
 </style>
 
 <script>
 (function(){
-  /* ── CONFIG — edit here to adjust colours, speed, counts ── */
-  var SPC={
-    G:'#39FF14',              // green accent
-    GA:'rgba(57,255,20,',     // green alpha prefix
-    W:'#fff',                 // white
-    MIN:2000,                 // minimum splash ms
-    SAFE:6000,                // safety dismiss ms
-    BP_DUR:2600,              // blueprint draw duration ms
-    BP_OP:0.28,               // blueprint opacity (0–1)
-    PT:40,                    // particle count
-    PT_SPD:0.22,              // particle speed
-    REDUCED:window.matchMedia('(prefers-reduced-motion:reduce)').matches
-  };
+/* ╔══════════════════════════════════════════════╗
+   ║  SPLASH CONFIG  — change colours/speed here ║
+   ╚══════════════════════════════════════════════╝ */
+var SPC={
+  G:'#39FF14',GA:'rgba(57,255,20,',
+  MIN:2000,SAFE:6000,
+  DUR:3800,   /* blueprint draw time (ms) */
+  PT:32,SPD:.16,
+  REDUCED:window.matchMedia('(prefers-reduced-motion:reduce)').matches
+};
 
-  /* ── Dismiss logic ── */
-  if(location.hash.startsWith('#view/')){
-    var _s=document.getElementById('tf-splash');
-    if(_s)_s.style.display='none';
-    return;
+/* ── Dismiss ── */
+if(location.hash.startsWith('#view/')){var _s=document.getElementById('tf-splash');if(_s)_s.style.display='none';return;}
+var _rdy=false,_min=false;
+window._splashInitDone=function(){_rdy=true;if(_min)_bye();};
+function _bye(){var el=document.getElementById('tf-splash');if(!el||el.dataset.d)return;el.dataset.d='1';el.style.opacity='0';setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el);},360);}
+setTimeout(function(){_min=true;if(_rdy)_bye();},SPC.MIN);
+setTimeout(function(){_rdy=_min=true;_bye();},SPC.SAFE);
+
+/* ── DOM ready ── */
+window.addEventListener('DOMContentLoaded',function(){
+  var alive=true;
+  var sp=document.getElementById('tf-splash');
+  if(sp)sp.addEventListener('transitionend',function(){alive=false;},{once:true});
+  var bpC=document.getElementById('tf-bp'),ptC=document.getElementById('tf-pt'),ringC=document.getElementById('tf-ring');
+  bpC.width=ptC.width=window.innerWidth;
+  bpC.height=ptC.height=window.innerHeight;
+  var bx=bpC.getContext('2d'),px2=ptC.getContext('2d');
+  var W=bpC.width,H=bpC.height;
+
+  /* ── Helpers ── */
+  function ph(prog,t0,t1){return Math.max(0,Math.min(1,(prog-t0)/(t1-t0)));}
+  function ln(ctx,x1,y1,x2,y2,f){
+    if(f<=0)return;f=Math.min(1,f);
+    ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x1+(x2-x1)*f,y1+(y2-y1)*f);ctx.stroke();
   }
-  var _rdy=false,_min=false;
-  window._splashInitDone=function(){_rdy=true;if(_min)_bye();};
-  function _bye(){
-    var el=document.getElementById('tf-splash');
-    if(!el||el.dataset.d)return;
-    el.dataset.d='1';
-    el.style.opacity='0';
-    setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el);},310);
+  function pl(ctx,pts,f){
+    /* partial polyline: pts=[[nx,ny],...], f=0-1 fraction */
+    if(f<=0||!pts.length)return;
+    var lens=[0],tot=0;
+    for(var i=1;i<pts.length;i++){
+      var dx=(pts[i][0]-pts[i-1][0])*W,dy=(pts[i][1]-pts[i-1][1])*H;
+      tot+=Math.sqrt(dx*dx+dy*dy);lens.push(tot);
+    }
+    var dl=tot*Math.min(1,f);
+    ctx.beginPath();ctx.moveTo(pts[0][0]*W,pts[0][1]*H);
+    for(var j=1;j<pts.length;j++){
+      if(lens[j]<=dl){ctx.lineTo(pts[j][0]*W,pts[j][1]*H);}
+      else{var fr=(dl-lens[j-1])/(lens[j]-lens[j-1]);ctx.lineTo((pts[j-1][0]+(pts[j][0]-pts[j-1][0])*fr)*W,(pts[j-1][1]+(pts[j][1]-pts[j-1][1])*fr)*H);break;}
+    }
+    ctx.stroke();
   }
-  setTimeout(function(){_min=true;if(_rdy)_bye();},SPC.MIN);
-  setTimeout(function(){_rdy=true;_min=true;_bye();},SPC.SAFE);
+  function rc(ctx,nx,ny,nw,nh,f){pl(ctx,[[nx,ny],[nx+nw,ny],[nx+nw,ny+nh],[nx,ny+nh],[nx,ny]],f);}
+  function arw(ctx,x1,y1,x2,y2,sz){
+    sz=sz||4;var a=Math.atan2(y2-y1,x2-x1);
+    ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-sz*Math.cos(a-.42),y2-sz*Math.sin(a-.42));ctx.lineTo(x2-sz*Math.cos(a+.42),y2-sz*Math.sin(a+.42));ctx.closePath();ctx.fill();
+  }
+  function tx(ctx,str,nx,ny,sz,op,align){
+    if(op<=0)return;
+    ctx.save();ctx.globalAlpha=op;ctx.font=sz+'px "Courier New",monospace';
+    ctx.fillStyle=SPC.G;ctx.textAlign=align||'center';ctx.textBaseline='middle';
+    ctx.fillText(str,nx*W,ny*H);ctx.restore();
+  }
 
-  /* ── Boot on DOMContentLoaded ── */
-  window.addEventListener('DOMContentLoaded',function(){
-    var alive=true;
-    var splash=document.getElementById('tf-splash');
-    if(splash)splash.addEventListener('transitionend',function(){alive=false;},{once:true});
+  /* ════════════════════════════════════════════════════
+     BLUEPRINT DRAW ENGINE
+     Sections: Frame → Grid → Refs → Elevation → Logo Zone → Floor Plan → Annotations
+  ════════════════════════════════════════════════════ */
+  var bpStart=null,pulseT=0;
 
-    var bpC=document.getElementById('tf-bp');
-    var ptC=document.getElementById('tf-pt');
-    var cmC=document.getElementById('tf-compass');
+  function drawBP(now){
+    if(!alive)return;
+    if(!bpStart)bpStart=now;
+    var prog=SPC.REDUCED?1:Math.min(1,(now-bpStart)/SPC.DUR);
+    pulseT+=.0006;
+    bx.clearRect(0,0,W,H);
+    bx.lineCap='round';bx.lineJoin='round';
+    bx.strokeStyle=SPC.G;bx.fillStyle=SPC.G;
 
-    /* ── Canvas resize ── */
-    function resizeC(c){if(!c)return;c.width=window.innerWidth;c.height=window.innerHeight;}
-    resizeC(bpC);resizeC(ptC);
+    /* Logo-area projection glow on canvas */
+    var lgx=W*.5,lgy=H*.43,pulse=.82+.18*Math.sin(pulseT*Math.PI*2);
+    var g0=bx.createRadialGradient(lgx,lgy,0,lgx,lgy,Math.min(W,H)*.30);
+    g0.addColorStop(0,SPC.GA+(0.08*pulse)+')');
+    g0.addColorStop(.45,SPC.GA+(0.03*pulse)+')');
+    g0.addColorStop(1,'rgba(57,255,20,0)');
+    bx.fillStyle=g0;bx.fillRect(0,0,W,H);
+    bx.fillStyle=SPC.G;
+
+    /* ── DRAWING BORDER FRAME ── */
+    var fp=ph(prog,0,.07);
+    if(fp>0){
+      bx.globalAlpha=.20*fp;bx.lineWidth=.9;bx.setLineDash([]);
+      rc(bx,.015,.008,.970,.984,fp);
+      bx.globalAlpha=.11*fp;bx.lineWidth=.5;
+      rc(bx,.032,.018,.937,.964,fp);
+      bx.globalAlpha=1;
+    }
+
+    /* ── GRID ── */
+    var gp=ph(prog,0,.18);
+    if(gp>0){
+      bx.globalAlpha=.07*gp;bx.lineWidth=.4;bx.setLineDash([]);
+      for(var gy=.08;gy<1;gy+=.08){bx.beginPath();bx.moveTo(0,gy*H);bx.lineTo(W,gy*H);bx.stroke();}
+      for(var gx=.08;gx<1;gx+=.08){bx.beginPath();bx.moveTo(gx*W,0);bx.lineTo(gx*W,H);bx.stroke();}
+      bx.globalAlpha=1;
+    }
+
+    /* ── GRID COLUMN/ROW REFERENCES ── */
+    var grp=ph(prog,.04,.22);
+    if(grp>0){
+      bx.globalAlpha=.20*grp;
+      bx.font='bold '+(H*.013)+'px "Courier New",monospace';
+      bx.textAlign='center';bx.textBaseline='middle';
+      ['A','B','C','D','E','F','G','H'].forEach(function(l,i){bx.fillText(l,(0.08+i*.12)*W,.011*H);});
+      ['1','2','3','4','5','6','7','8'].forEach(function(n,i){bx.fillText(n,.011*W,(0.08+i*.12)*H);});
+      bx.globalAlpha=1;
+    }
+
+    /* ══════════════════════════════════════
+       BUILDING ELEVATION  (top, y: 0.02-0.31)
+       Modern 3-storey commercial building
+    ══════════════════════════════════════ */
+
+    /* Ground line + foundation hatch */
+    var e0=ph(prog,.04,.17);
+    if(e0>0){
+      bx.globalAlpha=.32*e0;bx.lineWidth=1.4;bx.setLineDash([]);
+      ln(bx,.04*W,.31*H,.96*W,.31*H,e0);
+      bx.globalAlpha=.13*e0;bx.lineWidth=.55;
+      for(var fi=0;fi<11;fi++){ln(bx,(.04+fi*.083)*W,.31*H,(.018+fi*.083)*W,.328*H,e0);}
+    }
+
+    /* Main building outline */
+    var e1=ph(prog,.06,.26);
+    if(e1>0){
+      bx.globalAlpha=.30*e1;bx.lineWidth=1.3;bx.setLineDash([]);
+      pl(bx,[[.11,.31],[.11,.05],[.135,.05],[.135,.022],[.865,.022],[.865,.05],[.89,.05],[.89,.31]],e1);
+    }
+
+    /* Parapet detail */
+    var e1b=ph(prog,.14,.30);
+    if(e1b>0){
+      bx.globalAlpha=.22*e1b;bx.lineWidth=.9;bx.setLineDash([]);
+      pl(bx,[[.135,.022],[.135,.005],[.865,.005],[.865,.022]],e1b);
+      /* Penthouse box */
+      rc(bx,.39,.005,.22,.018,e1b);
+    }
+
+    /* Floor slab lines */
+    var e2=ph(prog,.14,.30);
+    if(e2>0){
+      bx.globalAlpha=.22*e2;bx.lineWidth=.9;bx.setLineDash([]);
+      ln(bx,.11*W,.12*H,.89*W,.12*H,e2);
+      ln(bx,.11*W,.21*H,.89*W,.21*H,e2);
+    }
+
+    /* Structural grid columns (dashed) */
+    var e3=ph(prog,.17,.33);
+    if(e3>0){
+      bx.globalAlpha=.14*e3;bx.lineWidth=.6;bx.setLineDash([4,4]);
+      [.28,.40,.50,.60,.72].forEach(function(cx){ln(bx,cx*W,.022*H,cx*W,.31*H,e3);});
+      bx.setLineDash([]);
+    }
+
+    /* Windows — top floor (y .025-.10) */
+    var wt=ph(prog,.20,.42);
+    if(wt>0){
+      bx.globalAlpha=.24*wt;bx.lineWidth=.8;bx.setLineDash([]);
+      [[.145,.07],[.225,.07],[.325,.07],[.425,.07],[.525,.07],[.625,.07],[.725,.07],[.825,.07]].forEach(function(w){
+        rc(bx,w[0]-.045,.026,.07,.078,wt);
+      });
+    }
+
+    /* Windows — mid floor (y .125-.195) */
+    var wm=ph(prog,.24,.46);
+    if(wm>0){
+      bx.globalAlpha=.24*wm;bx.lineWidth=.8;bx.setLineDash([]);
+      [[.145,.07],[.225,.07],[.325,.07],[.425,.07],[.525,.07],[.625,.07],[.725,.07],[.825,.07]].forEach(function(w){
+        rc(bx,w[0]-.045,.125,.07,.078,wm);
+      });
+    }
+
+    /* Ground floor — large glazed bays + entrance */
+    var wg=ph(prog,.27,.50);
+    if(wg>0){
+      bx.globalAlpha=.26*wg;bx.lineWidth=1;bx.setLineDash([]);
+      rc(bx,.13,.215,.155,.090,wg);   /* left bay */
+      rc(bx,.715,.215,.155,.090,wg);  /* right bay */
+      /* Entrance canopy + door */
+      pl(bx,[[.42,.31],[.42,.185],[.58,.185],[.58,.31]],wg);
+      bx.globalAlpha=.16*wg;bx.lineWidth=.7;
+      ln(bx,.40*W,.185*H,.60*W,.185*H,wg);  /* canopy soffit */
+      ln(bx,.40*W,.175*H,.60*W,.175*H,wg);  /* canopy top */
+      bx.globalAlpha=.20*wg;bx.lineWidth=.9;
+      ln(bx,.50*W,.185*H,.50*W,.31*H,wg);   /* door centre split */
+      /* Entrance steps */
+      bx.globalAlpha=.18*wg;bx.lineWidth=.7;
+      ln(bx,.40*W,.315*H,.60*W,.315*H,wg);
+      ln(bx,.39*W,.322*H,.61*W,.322*H,wg);
+    }
+
+    /* Elevation dimension line — total width */
+    var ed=ph(prog,.35,.58);
+    if(ed>0){
+      bx.globalAlpha=.22*ed;bx.lineWidth=.7;bx.setLineDash([]);
+      ln(bx,.11*W,.001*H,.89*W,.001*H,ed);
+      bx.globalAlpha=.22*ed;
+      if(ed>.25){arw(bx,.16*W,.001*H,.11*W,.001*H,4);}
+      if(ed>.60){arw(bx,.84*W,.001*H,.89*W,.001*H,4);}
+      /* Height tick marks on right */
+      bx.globalAlpha=.20*ed;
+      [[.022,.31],[.12,.31],[.21,.31],[.31,.31]].forEach(function(m,i){
+        ln(bx,.89*W,m[0]*H,.94*W,m[0]*H,ed);
+      });
+      ln(bx,.915*W,.022*H,.915*W,.31*H,ed);
+      if(ed>.30){arw(bx,.915*W,.05*H,.915*W,.022*H,3);}
+      if(ed>.70){arw(bx,.915*W,.29*H,.915*W,.31*H,3);}
+    }
+
+    /* Elevation text */
+    var et=ph(prog,.46,.70);
+    if(et>0){
+      var fsz=Math.round(H*.012);
+      [
+        [.935,.028,'FL +9.0','left'],
+        [.935,.125,'FL +6.0','left'],
+        [.935,.215,'FL +3.0','left'],
+        [.935,.305,'GL ±0.0','left'],
+      ].forEach(function(l){bx.globalAlpha=.22*et;bx.font=fsz+'px "Courier New",monospace';bx.fillStyle=SPC.G;bx.textAlign=l[3];bx.textBaseline='middle';bx.fillText(l[2],l[0]*W,l[1]*H);});
+      tx(bx,'36.0 M',.50,.014,fsz,.22*et);
+      bx.globalAlpha=.18*et;bx.textAlign='center';bx.font=Math.round(H*.011)+'px "Courier New",monospace';bx.fillText('FRONT ELEVATION — SCALE 1:100',.50*W,.338*H);
+      bx.globalAlpha=1;
+    }
+
+    /* ══════════════════════════════════════
+       LOGO ZONE CALLOUTS (y: .35-.58)
+       Blueprint elements flanking the TF logo
+    ══════════════════════════════════════ */
+    var lz=ph(prog,.32,.58);
+    if(lz>0){
+      /* Section cut dashed lines flanking logo */
+      bx.globalAlpha=.13*lz;bx.lineWidth=.7;bx.setLineDash([9,4]);
+      ln(bx,.03*W,.455*H,.22*W,.455*H,lz);
+      ln(bx,.78*W,.455*H,.97*W,.455*H,lz);
+      bx.setLineDash([]);
+
+      /* Section reference circles */
+      bx.globalAlpha=.20*lz;bx.lineWidth=.85;
+      bx.beginPath();bx.arc(.055*W,.455*H,H*.016,0,Math.PI*2);bx.stroke();
+      bx.beginPath();bx.arc(.945*W,.455*H,H*.016,0,Math.PI*2);bx.stroke();
+      bx.globalAlpha=.18*lz;bx.font='bold '+(H*.011)+'px "Courier New",monospace';bx.textAlign='center';bx.textBaseline='middle';
+      bx.fillText('A',.055*W,.455*H);
+      bx.fillText('A',.945*W,.455*H);
+
+      /* Left info block */
+      bx.globalAlpha=.15*lz;bx.lineWidth=.6;
+      rc(bx,.022,.36,.178,.175,lz*.8);
+      bx.globalAlpha=.17*lz;bx.font=Math.round(H*.0095)+'px "Courier New",monospace';bx.textAlign='left';bx.textBaseline='middle';
+      [
+        [.035,.380,'PROJECT NO:'],
+        [.035,.398,'TF-ARQ-2026'],
+        [.035,.420,'─────────────'],
+        [.035,.438,'DRG: TF-001'],
+        [.035,.456,'REV: A'],
+        [.035,.474,'DATE: 2026'],
+        [.035,.492,'─────────────'],
+        [.035,.510,'SCALE 1:100'],
+      ].forEach(function(t){bx.fillText(t[2],t[0]*W,t[1]*H);});
+
+      /* Right info block */
+      bx.globalAlpha=.15*lz;bx.lineWidth=.6;
+      rc(bx,.800,.36,.178,.175,lz*.8);
+      bx.globalAlpha=.17*lz;bx.textAlign='left';
+      [
+        [.812,.380,'SPECIFICATION:'],
+        [.812,.398,'EXT: BRICK/GLASS'],
+        [.812,.420,'─────────────'],
+        [.812,.438,'STR: REINF. CONC'],
+        [.812,.456,'ROOF: SBS MEM.'],
+        [.812,.474,'INSUL: PIR 100mm'],
+        [.812,.492,'─────────────'],
+        [.812,.510,'BS EN 1991-1-1'],
+      ].forEach(function(t){bx.fillText(t[2],t[0]*W,t[1]*H);});
+      bx.globalAlpha=1;
+    }
+
+    /* ══════════════════════════════════════
+       FLOOR PLAN (bottom, y: 0.62-0.95)
+       Modern open-plan apartment/dwelling
+    ══════════════════════════════════════ */
+
+    /* Section plan title */
+    var fp0=ph(prog,.25,.42);
+    if(fp0>0){
+      bx.globalAlpha=.18*fp0;bx.lineWidth=.9;bx.setLineDash([]);
+      ln(bx,.04*W,.60*H,.96*W,.60*H,fp0);
+      bx.globalAlpha=.17*fp0;bx.font='bold '+(H*.012)+'px "Courier New",monospace';bx.textAlign='center';bx.textBaseline='middle';
+      bx.fillText('GROUND FLOOR PLAN — SCALE 1:50',.50*W,.595*H);
+      bx.globalAlpha=1;
+    }
+
+    /* Outer walls (with door/window gaps) */
+    var fw=ph(prog,.22,.46);
+    if(fw>0){
+      bx.globalAlpha=.30*fw;bx.lineWidth=1.3;bx.setLineDash([]);
+      /* Top wall — gap for front door x:.44-.56 */
+      ln(bx,.04*W,.63*H,.44*W,.63*H,fw);
+      ln(bx,.56*W,.63*H,.96*W,.63*H,fw);
+      /* Bottom wall */
+      ln(bx,.04*W,.95*H,.96*W,.95*H,fw);
+      /* Left wall */
+      ln(bx,.04*W,.63*H,.04*W,.95*H,fw);
+      /* Right wall — gap for window y:.68-.77 */
+      ln(bx,.96*W,.63*H,.96*W,.68*H,fw);
+      ln(bx,.96*W,.77*H,.96*W,.95*H,fw);
+      /* Window symbols on top wall (double line = glazing) */
+      bx.globalAlpha=.22*fw;bx.lineWidth=.6;
+      /* Living room windows */
+      ln(bx,.09*W,.63*H,.18*W,.63*H,fw);ln(bx,.09*W,.623*H,.18*W,.623*H,fw);
+      ln(bx,.24*W,.63*H,.34*W,.63*H,fw);ln(bx,.24*W,.623*H,.34*W,.623*H,fw);
+      /* Kitchen windows */
+      ln(bx,.63*W,.63*H,.73*W,.63*H,fw);ln(bx,.63*W,.623*H,.73*W,.623*H,fw);
+      ln(bx,.79*W,.63*H,.88*W,.63*H,fw);ln(bx,.79*W,.623*H,.88*W,.623*H,fw);
+      /* Right side window */
+      ln(bx,.96*W,.682*H,.96*W,.768*H,fw);ln(bx,.967*W,.682*H,.967*W,.768*H,fw);
+      /* Bottom wall windows */
+      ln(bx,.08*W,.95*H,.20*W,.95*H,fw);ln(bx,.08*W,.957*H,.20*W,.957*H,fw);
+      ln(bx,.54*W,.95*H,.65*W,.95*H,fw);ln(bx,.54*W,.957*H,.65*W,.957*H,fw);
+    }
+
+    /* Interior walls */
+    var fiw=ph(prog,.34,.56);
+    if(fiw>0){
+      bx.globalAlpha=.25*fiw;bx.lineWidth=1.1;bx.setLineDash([]);
+      /* Centre vertical: gaps at y .695-.75 (kitchen door) */
+      ln(bx,.50*W,.63*H,.50*W,.695*H,fiw);
+      ln(bx,.50*W,.750*H,.50*W,.95*H,fiw);
+      /* Horizontal divider y=.79 — gaps for doors */
+      ln(bx,.04*W,.79*H,.20*W,.79*H,fiw);     /* left seg */
+      ln(bx,.27*W,.79*H,.45*W,.79*H,fiw);     /* mid-left seg */
+      ln(bx,.55*W,.79*H,.96*W,.79*H,fiw);     /* right half */
+      /* Bathroom partition x=.76 */
+      ln(bx,.76*W,.79*H,.76*W,.95*H,fiw);
+      /* Kitchen counter / worktop (L-shape) */
+      bx.globalAlpha=.14*fiw;bx.lineWidth=.7;
+      pl(bx,[[.52,.63],[.52,.695],[.94,.695]],fiw);
+      ln(bx,.52*W,.63*H,.94*W,.63*H,fiw*.4);  /* back wall */
+    }
+
+    /* Door arcs */
+    var fda=ph(prog,.40,.62);
+    if(fda>0){
+      bx.globalAlpha=.18*fda;bx.lineWidth=.75;
+      /* Front door — opens inward, arc left of gap */
+      bx.setLineDash([4,3]);
+      bx.beginPath();bx.arc(.56*W,.63*H,.12*W,Math.PI,Math.PI+Math.PI*.5,false);bx.stroke();
+      /* Door leaf */
+      bx.setLineDash([]);bx.globalAlpha=.22*fda;bx.lineWidth=.9;
+      ln(bx,.56*W,.63*H,.56*W,.63*H+.12*W,fda);
+      /* Internal doors */
+      bx.globalAlpha=.15*fda;bx.setLineDash([3,3]);bx.lineWidth=.7;
+      bx.beginPath();bx.arc(.20*W,.79*H,.07*H,0,Math.PI*.5);bx.stroke();
+      bx.beginPath();bx.arc(.55*W,.79*H,.07*H,Math.PI,Math.PI*.5,true);bx.stroke();
+      bx.beginPath();bx.arc(.50*W,.695*H,.055*W,Math.PI*.5,0,true);bx.stroke();
+      bx.beginPath();bx.arc(.76*W,.86*H,.065*H,Math.PI,Math.PI*.5,true);bx.stroke();
+      bx.setLineDash([]);
+    }
+
+    /* Furniture symbols (very subtle) */
+    var ff=ph(prog,.48,.72);
+    if(ff>0){
+      bx.globalAlpha=.10*ff;bx.lineWidth=.6;bx.setLineDash([]);
+      /* Sofa (L-shape) */
+      rc(bx,.07,.655,.175,.065,ff);rc(bx,.07,.655,.025,.065,ff);rc(bx,.22,.655,.025,.065,ff);
+      /* Dining table + chairs */
+      rc(bx,.28,.658,.14,.075,ff);
+      [[.31,.645],[.38,.645],[.31,.742],[.38,.742]].forEach(function(c){bx.beginPath();bx.arc(c[0]*W,c[1]*H,H*.013,0,Math.PI*2);bx.stroke();});
+      /* Bed 1 (master) */
+      rc(bx,.07,.815,.32,.11,ff);
+      bx.globalAlpha=.07*ff;ln(bx,.08*W,.825*H,.38*W,.825*H,ff);  /* pillow line */
+      /* Bed 2 */
+      bx.globalAlpha=.10*ff;rc(bx,.53,.815,.20,.11,ff);
+      bx.globalAlpha=.07*ff;ln(bx,.54*W,.825*H,.72*W,.825*H,ff);
+      /* Bathroom fixtures */
+      bx.globalAlpha=.10*ff;
+      rc(bx,.785,.810,.085,.070,ff);   /* bath */
+      bx.beginPath();bx.ellipse(.825*W,.896*H,.028*W,.038*H,0,0,Math.PI*2);bx.stroke(); /* WC */
+      /* Kitchen island */
+      bx.globalAlpha=.09*ff;rc(bx,.60,.715,.20,.045,ff);
+    }
+
+    /* Floor plan dimensions */
+    var fdim=ph(prog,.54,.78);
+    if(fdim>0){
+      bx.globalAlpha=.20*fdim;bx.lineWidth=.7;bx.setLineDash([]);
+      /* Total width bottom */
+      ln(bx,.04*W,.972*H,.96*W,.972*H,fdim);
+      if(fdim>.28){arw(bx,.09*W,.972*H,.04*W,.972*H,4);}
+      if(fdim>.65){arw(bx,.91*W,.972*H,.96*W,.972*H,4);}
+      /* Half widths */
+      bx.globalAlpha=.14*fdim;
+      ln(bx,.04*W,.964*H,.50*W,.964*H,fdim);
+      ln(bx,.50*W,.964*H,.96*W,.964*H,fdim);
+      /* Height right */
+      bx.globalAlpha=.20*fdim;
+      ln(bx,.978*W,.63*H,.978*W,.95*H,fdim);
+      if(fdim>.35){arw(bx,.978*W,.66*H,.978*W,.63*H,4);}
+      if(fdim>.72){arw(bx,.978*W,.92*H,.978*W,.95*H,4);}
+    }
+
+    /* Floor plan text labels */
+    var ftx=ph(prog,.58,.82);
+    if(ftx>0){
+      var fs=Math.round(H*.011);
+      bx.font=fs+'px "Courier New",monospace';bx.fillStyle=SPC.G;bx.textAlign='center';bx.textBaseline='middle';
+      [
+        [.270,.710,'LIVING ROOM',.16],
+        [.730,.710,'KITCHEN / DINING',.16],
+        [.265,.872,'MASTER BEDROOM',.16],
+        [.625,.872,'BEDROOM 2',.16],
+        [.855,.872,'BATHROOM',.16],
+        [.500,.984,'18.0 M',.22],
+        [.988,.790,'9.0 M',.22],
+      ].forEach(function(t){bx.globalAlpha=t[3]*ftx;bx.fillText(t[2],t[0]*W,t[1]*H);});
+      bx.globalAlpha=.15*ftx;bx.font=Math.round(H*.009)+'px "Courier New",monospace';
+      [[.270,.733,'(6.8 × 4.2 M)'],[.730,.733,'(9.2 × 4.2 M)'],[.265,.893,'(6.8 × 4.8 M)'],[.625,.893,'(4.8 × 4.8 M)'],[.855,.893,'(3.6 × 4.8 M)']].forEach(function(t){bx.fillText(t[2],t[0]*W,t[1]*H);});
+      bx.globalAlpha=1;
+    }
+
+    /* North arrow + scale bar */
+    var fsym=ph(prog,.64,.86);
+    if(fsym>0){
+      /* North arrow */
+      var nx=.87*W,ny=.688*H,nr=H*.024;
+      bx.globalAlpha=.22*fsym;bx.lineWidth=.8;bx.setLineDash([]);
+      /* N letter */
+      bx.font='bold '+(H*.013)+'px "Courier New",monospace';bx.textAlign='center';bx.textBaseline='middle';
+      bx.fillText('N',nx,ny-nr*1.7);
+      /* Arrow body */
+      bx.beginPath();bx.moveTo(nx,ny-nr);bx.lineTo(nx+nr*.38,ny+nr*.35);bx.lineTo(nx,ny);bx.closePath();
+      bx.fillStyle=SPC.G;bx.globalAlpha=.22*fsym;bx.fill();
+      bx.beginPath();bx.moveTo(nx,ny-nr);bx.lineTo(nx-nr*.38,ny+nr*.35);bx.lineTo(nx,ny);bx.closePath();
+      bx.globalAlpha=.08*fsym;bx.fill();
+      /* Scale bar */
+      var sbx=.055*W,sby=.968*H,sbw=W*.08;
+      bx.globalAlpha=.20*fsym;bx.lineWidth=.7;bx.fillStyle=SPC.G;bx.strokeStyle=SPC.G;
+      for(var si=0;si<4;si++){
+        bx.globalAlpha=(si%2===0?.20:.09)*fsym;
+        bx.fillRect(sbx+si*sbw/4,sby,sbw/4,H*.006);
+      }
+      bx.globalAlpha=.18*fsym;bx.font=Math.round(H*.009)+'px "Courier New",monospace';bx.textAlign='center';bx.fillText('0   2   4 M',sbx+sbw/2,sby+H*.012);
+      bx.globalAlpha=1;
+    }
+
+    /* Title block (bottom right) */
+    var tb=ph(prog,.68,.92);
+    if(tb>0){
+      bx.globalAlpha=.15*tb;bx.lineWidth=.7;bx.strokeStyle=SPC.G;bx.setLineDash([]);
+      rc(bx,.59,.960,.385,.032,tb);
+      bx.globalAlpha=.11*tb;bx.fillStyle=SPC.G;bx.textAlign='left';
+      bx.font=Math.round(H*.0095)+'px "Courier New",monospace';bx.textBaseline='middle';
+      [[.604,.966,'TRADESFLOW PRO  •  ARCHITECTURAL SERIES'],[.604,.976,'DWG: TF-ARQ-2026-001   REV: A   SCALE 1:50']].forEach(function(t){bx.fillText(t[2],t[0]*W,t[1]*H);});
+      bx.globalAlpha=1;
+    }
+
+    requestAnimationFrame(drawBP);
+  }
+  requestAnimationFrame(drawBP);
+
+  /* ════ PARTICLES ════ */
+  if(!SPC.REDUCED){
+    var pts=Array.from({length:SPC.PT},function(){return{x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.1+.25,vx:(Math.random()-.5)*SPC.SPD,vy:(Math.random()-.5)*SPC.SPD,a:Math.random()*.20+.04};});
+    function doPT(){if(!alive)return;px2.clearRect(0,0,W,H);pts.forEach(function(p){px2.beginPath();px2.arc(p.x,p.y,p.r,0,Math.PI*2);px2.fillStyle=SPC.GA+p.a+')';px2.fill();p.x=(p.x+p.vx+W)%W;p.y=(p.y+p.vy+H)%H;});requestAnimationFrame(doPT);}
+    doPT();
+  }
+
+  /* ════ LOADING RING ════ */
+  if(ringC){
+    var rc2=ringC.getContext('2d'),RS=ringC.width,RA=0;
+    function doRing(){
+      if(!alive)return;
+      rc2.clearRect(0,0,RS,RS);
+      var cx2=RS/2,cy2=RS/2,r=RS/2-3;
+      rc2.beginPath();rc2.arc(cx2,cy2,r,0,Math.PI*2);rc2.strokeStyle='rgba(57,255,20,0.1)';rc2.lineWidth=1.5;rc2.stroke();
+      for(var ti=0;ti<16;ti++){
+        var ta=ti*Math.PI/8,r1=ti%4===0?r-4:r-2.5;
+        rc2.beginPath();rc2.moveTo(cx2+r*Math.cos(ta),cy2+r*Math.sin(ta));rc2.lineTo(cx2+r1*Math.cos(ta),cy2+r1*Math.sin(ta));
+        rc2.strokeStyle=ti%4===0?'rgba(57,255,20,0.45)':'rgba(57,255,20,0.15)';rc2.lineWidth=ti%4===0?1.2:.6;rc2.stroke();
+      }
+      rc2.beginPath();rc2.arc(cx2,cy2,r,RA,RA+Math.PI*.6);rc2.strokeStyle=SPC.G;rc2.lineWidth=2;rc2.lineCap='round';rc2.stroke();
+      rc2.beginPath();rc2.arc(cx2,cy2,r-5,-RA*1.5,-RA*1.5+Math.PI*.35);rc2.strokeStyle='rgba(57,255,20,0.35)';rc2.lineWidth=1;rc2.stroke();
+      rc2.beginPath();rc2.arc(cx2,cy2,2,0,Math.PI*2);rc2.fillStyle=SPC.G;rc2.fill();
+      RA+=.025;requestAnimationFrame(doRing);
+    }
+    doRing();
+  }
+
+  /* ════ ANIMATION SEQUENCE ════ */
+  function g(id){return document.getElementById(id);}
+  var logo=g('tf-logo'),wt=g('tf-wt'),wf=g('tf-wf'),wp=g('tf-wp'),wc=g('tf-wc'),
+      ul=g('tf-ul'),tl=g('tf-tl'),ld=g('tf-ld'),mono=g('tf-mono');
+
+  if(SPC.REDUCED){
+    [wt,wf,wp,wc,tl,ld].forEach(function(el){if(el){el.style.opacity='1';el.style.transform='none';}});
+    if(logo){logo.style.opacity='1';logo.style.transform='none';}
+    if(ul)ul.style.width='100%';
+  } else {
+    setTimeout(function(){
+      if(logo){logo.style.opacity='1';logo.style.transform='translateY(0)';
+        setTimeout(function(){if(mono)mono.style.animation='tf-float 4.5s ease-in-out infinite';},900);}
+    },140);
+    setTimeout(function(){if(wt){wt.style.opacity='1';wt.style.transform='translateX(0)';}},470);
+    setTimeout(function(){if(wf)wf.style.opacity='1';},650);
+    setTimeout(function(){if(wp){wp.style.opacity='1';wp.style.transform='translateX(0)';}},810);
+    setTimeout(function(){if(wc)wc.style.opacity='1';},960);
+    setTimeout(function(){if(ul)ul.style.width='100%';},1060);
+    setTimeout(function(){if(tl)tl.style.opacity='1';},1340);
+    setTimeout(function(){if(ld)ld.style.opacity='1';},1500);
+  }
+},{once:true});
+})();
 
     /* ════════════════════════════════════════════
        BLUEPRINT ENGINE
