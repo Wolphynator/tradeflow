@@ -654,9 +654,9 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
 <div id="tf-splash" style="position:fixed;inset:0;z-index:99999;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;opacity:1;transition:opacity 250ms ease">
   <canvas id="tf-splash-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none"></canvas>
   <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:0">
-    <!-- Logo -->
+    <!-- Logo: animated wireframe globe -->
     <div id="tf-splash-logo" style="opacity:0;transform:scale(0.85);transition:opacity 500ms ease,transform 600ms cubic-bezier(.34,1.56,.64,1);margin-bottom:28px">
-      <img src="/Pictures/Trades.png" alt="TradesFlow Pro" style="width:80px;height:80px;object-fit:contain;filter:drop-shadow(0 0 18px rgba(57,255,20,0.35))">
+      <canvas id="tf-globe" width="96" height="96" style="display:block;filter:drop-shadow(0 0 22px rgba(57,255,20,0.45))"></canvas>
     </div>
     <!-- Brand name -->
     <div style="display:flex;align-items:baseline;gap:0;font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif;font-weight:800;font-size:clamp(28px,7vw,38px);letter-spacing:3px;line-height:1">
@@ -721,6 +721,63 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
       var pts=Array.from({length:55},function(){return{x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.5+0.4,vx:(Math.random()-.5)*.25,vy:(Math.random()-.5)*.25,a:Math.random()*.5+.1}});
       function drawParticles(){ctx.clearRect(0,0,W,H);pts.forEach(function(p){ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle='rgba(57,255,20,'+p.a+')';ctx.fill();p.x=(p.x+p.vx+W)%W;p.y=(p.y+p.vy+H)%H;});requestAnimationFrame(drawParticles);}
       drawParticles();
+    }
+    // Animated wireframe globe
+    var gc=document.getElementById('tf-globe');
+    if(gc){
+      var gx=gc.getContext('2d');
+      var S=gc.width,cx=S/2,cy=S/2,R=S*0.42;
+      var globeAngle=0;
+      var splashAlive=true;
+      function drawGlobe(){
+        if(!splashAlive)return;
+        gx.clearRect(0,0,S,S);
+        // Sphere fill
+        var bg=gx.createRadialGradient(cx-R*.28,cy-R*.28,0,cx,cy,R);
+        bg.addColorStop(0,'#141a14');bg.addColorStop(.6,'#080d08');bg.addColorStop(1,'#000');
+        gx.beginPath();gx.arc(cx,cy,R,0,Math.PI*2);gx.fillStyle=bg;gx.fill();
+        // Atmosphere glow ring
+        var atm=gx.createRadialGradient(cx,cy,R*.88,cx,cy,R*1.18);
+        atm.addColorStop(0,'rgba(57,255,20,0.18)');atm.addColorStop(1,'rgba(57,255,20,0)');
+        gx.beginPath();gx.arc(cx,cy,R*1.18,0,Math.PI*2);gx.fillStyle=atm;gx.fill();
+        // Clip to sphere
+        gx.save();gx.beginPath();gx.arc(cx,cy,R,0,Math.PI*2);gx.clip();
+        // Latitude lines
+        var lats=[-60,-30,0,30,60];
+        lats.forEach(function(lat,i){
+          var lr=lat*Math.PI/180;
+          var y=cy+R*Math.sin(lr);
+          var rx=R*Math.cos(lr);
+          var ry=rx*.32;
+          var alpha=lat===0?.5:.22;
+          var lw=lat===0?1:.6;
+          gx.beginPath();gx.ellipse(cx,y,rx,ry,0,0,Math.PI*2);
+          gx.strokeStyle='rgba(57,255,20,'+alpha+')';gx.lineWidth=lw;gx.stroke();
+        });
+        // Longitude lines (spinning)
+        for(var lng=0;lng<360;lng+=30){
+          var a=(lng+globeAngle)*Math.PI/180;
+          var cosA=Math.cos(a);
+          var rx2=Math.abs(cosA)*R;
+          var alpha2=Math.max(0,(cosA+1)/2*.38);
+          if(rx2<1)continue;
+          gx.beginPath();gx.ellipse(cx,cy,rx2,R,0,0,Math.PI*2);
+          gx.strokeStyle='rgba(57,255,20,'+alpha2+')';gx.lineWidth=.7;gx.stroke();
+        }
+        gx.restore();
+        // Sphere border
+        gx.beginPath();gx.arc(cx,cy,R,0,Math.PI*2);
+        gx.strokeStyle='rgba(57,255,20,0.65)';gx.lineWidth=1.4;gx.stroke();
+        // Specular highlight
+        var hl=gx.createRadialGradient(cx-R*.32,cy-R*.32,0,cx-R*.2,cy-R*.2,R*.45);
+        hl.addColorStop(0,'rgba(255,255,255,0.07)');hl.addColorStop(1,'rgba(255,255,255,0)');
+        gx.beginPath();gx.arc(cx,cy,R,0,Math.PI*2);gx.fillStyle=hl;gx.fill();
+        globeAngle+=.35;
+        requestAnimationFrame(drawGlobe);
+      }
+      drawGlobe();
+      // Stop when splash removed
+      document.getElementById('tf-splash').addEventListener('transitionend',function(){splashAlive=false;},{once:true});
     }
     // Sequence
     setTimeout(function(){if(logo){logo.style.opacity='1';logo.style.transform='scale(1)';}},80);
