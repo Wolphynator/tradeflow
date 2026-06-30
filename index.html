@@ -8468,7 +8468,7 @@ async function notifyContractor(doc, event){
     await fetch('https://nslqoidosdfyjdojvrqa.supabase.co/functions/v1/send-push',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({token:doc.shareToken,event,title:titles[event]||titles.opened,body:bodies[event]||bodies.opened})
+      body:JSON.stringify({token:doc.shareToken,event,title:titles[event]||titles.opened,body:bodies[event]||bodies.opened,client_name:doc.client||'',doc_number:doc.id||'',entity_type:doc.type||'estimate'})
     });
   }catch(e){}
 }

@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { token, event, title, body } = await req.json()
+    const { token, event, title, body, client_name, doc_number, entity_type } = await req.json()
     if (!token) {
       return new Response(JSON.stringify({ error: 'token required' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -32,15 +32,31 @@ Deno.serve(async (req) => {
 
     // Find the business from the share token (check invoices then estimates)
     let bizId: string | null = null
-    const { data: inv } = await sb.from('invoices').select('business_id').eq('share_token', token).maybeSingle()
-    if (inv) bizId = inv.business_id
+    let entityId: string | null = null
+    const { data: inv } = await sb.from('invoices').select('id, business_id').eq('share_token', token).maybeSingle()
+    if (inv) { bizId = inv.business_id; entityId = inv.id }
     if (!bizId) {
-      const { data: est } = await sb.from('estimates').select('business_id').eq('share_token', token).maybeSingle()
-      if (est) bizId = est.business_id
+      const { data: est } = await sb.from('estimates').select('id, business_id').eq('share_token', token).maybeSingle()
+      if (est) { bizId = est.business_id; entityId = est.id }
     }
     if (!bizId) {
       return new Response(JSON.stringify({ ok: true, skipped: 'token not found' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // Log activity for 'opened' event
+    if (event === 'opened' && bizId && entityId) {
+      const resolvedType = entity_type || (inv ? 'invoice' : 'estimate')
+      await sb.rpc('log_activity', {
+        p_business_id: bizId,
+        p_entity_type: resolvedType,
+        p_entity_id: entityId,
+        p_action: 'viewed',
+        p_metadata: {
+          client_name: client_name || 'Client',
+          doc_number: doc_number || '',
+        },
       })
     }
 
