@@ -7898,8 +7898,8 @@ function renderActivityItem(entry){
     label=(meta.doc_number||entityType)+' sent by email';
     sub='To: '+(meta.to||'client')+(meta.total?' — '+meta.total:'');
   }else if(action==='viewed'){
-    label=(meta.doc_number||entityType)+' viewed by client';
-    sub=meta.client_name||'';
+    label=(meta.doc_number||entityType)+' viewed by '+(meta.client_name||'client');
+    sub='';
   }else if(action==='created'){
     label=(meta.name||meta.doc_number||entityType)+' created';
     sub=entityType;
