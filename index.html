@@ -5002,6 +5002,31 @@ function closeClientEditor(){
 }
 
 /* ── Client List Rendering ── */
+function clientMetrics(client){
+  const clientId=client?.id||null;
+  const clientName=String(client?.name||'').trim().toLowerCase();
+  const linkedInvoices=(typeof invoices!=='undefined'?invoices:[]).filter(inv=>
+    (clientId&&inv.client_id===clientId)||
+    (!inv.client_id&&clientName&&String(inv.client||'').trim().toLowerCase()===clientName)
+  );
+  const linkedEstimates=(typeof estimates!=='undefined'?estimates:[]).filter(est=>
+    (clientId&&est.client_id===clientId)||
+    (!est.client_id&&clientName&&String(est.client||'').trim().toLowerCase()===clientName)
+  );
+  const liveInvoices=linkedInvoices.filter(inv=>invoiceDisplayStatus(inv)!=='Cancelled');
+  const jobs=liveInvoices.length;
+  const revenue=liveInvoices.reduce((sum,inv)=>{
+    const paid=invoicePaymentsTotal(inv);
+    return sum+(paid>0?paid:(invoiceDisplayStatus(inv)==='Paid'?(Number(inv.total)||0):0));
+  },0);
+  const statuses=liveInvoices.map(invoiceDisplayStatus);
+  let status='Lead';
+  if(statuses.includes('Overdue')) status='Overdue';
+  else if(statuses.some(s=>s==='Sent'||s==='Viewed')||linkedEstimates.some(est=>['Accepted','Converted'].includes(est.status))) status='Active';
+  else if(statuses.includes('Paid')||revenue>0) status='Paid';
+  return{jobs,revenue,status};
+}
+
 function renderClientList(){
   const q=(document.getElementById('client-search')?.value||'').toLowerCase();
   const list=document.getElementById('client-list');
@@ -5021,6 +5046,7 @@ function renderClientList(){
   }
   const statusColor=s=>s==='Overdue'?'var(--danger)':(s==='Paid'||s==='Active'?'var(--success)':'var(--muted)');
   list.innerHTML=filtered.map(({c,i})=>{
+    const metrics=clientMetrics(c);
     const ci=i%avColors.length;
     const archived=c.archived?'<span class="cl-archived-tag">Archived</span>':'';
     const checkHtml=clientSelectMode?'<div class="cl-check" onclick="event.stopPropagation();toggleClientSelect('+i+')">'+(clientSelectedSet.has(i)?'✓':'')+'</div>':'';
@@ -5035,9 +5061,9 @@ function renderClientList(){
       archived+'</div></div>'+
       (addrLine?'<div class="cc-addr">'+esc(addrLine)+'</div>':'')+
       '<div class="cc-stats">'+
-        '<div><div class="csv">'+(c.jobs||0)+'</div><div class="csl">Jobs</div></div>'+
-        '<div><div class="csv">'+moneyShort(c.revenue||0)+'</div><div class="csl">Revenue</div></div>'+
-        '<div><div class="csv" style="color:'+statusColor(c.status||'Lead')+'">'+esc(c.status||'Lead')+'</div><div class="csl">Status</div></div>'+
+        '<div><div class="csv">'+metrics.jobs+'</div><div class="csl">Jobs</div></div>'+
+        '<div><div class="csv">'+moneyShort(metrics.revenue)+'</div><div class="csl">Revenue</div></div>'+
+        '<div><div class="csv" style="color:'+statusColor(metrics.status)+'">'+esc(metrics.status)+'</div><div class="csl">Status</div></div>'+
       '</div>'+
       (!clientSelectMode&&!c.archived?'<div class="saved-client-actions"><button class="primary" onclick="event.stopPropagation();startEstimateForClient('+i+')">Use for Estimate</button><button class="secondary" onclick="event.stopPropagation();startInvoiceForClient('+i+')">Use for Invoice</button></div>':'')+
     '</div>';
@@ -5056,7 +5082,7 @@ function updateClientSummary(){
   const total=savedClients.length;
   const active=savedClients.filter(c=>!c.archived).length;
   const archived=savedClients.filter(c=>c.archived).length;
-  const lifetime=savedClients.reduce((s,c)=>s+(c.revenue||0),0);
+  const lifetime=savedClients.reduce((s,c)=>s+clientMetrics(c).revenue,0);
   const sub=document.getElementById('clients-sub');
   if(sub) sub.textContent=active+' active · '+moneyShort(lifetime)+' lifetime';
   const sv=document.getElementById('cl-stat-total');if(sv) sv.textContent=total;
@@ -5068,6 +5094,7 @@ function updateClientSummary(){
 function openClientDetail(index){
   const client=savedClients[index];
   if(!client) return;
+  const metrics=clientMetrics(client);
   currentClientIndex=index;
   const av=document.getElementById('cl-detail-av');
   const nm=document.getElementById('cl-detail-name');
@@ -5079,15 +5106,15 @@ function openClientDetail(index){
   if(lc) lc.textContent=client.type+' - '+clientLocation(client);
   if(ns) ns.textContent=client.name;
   if(bw){
-    const statusPillClass=client.status==='Paid'?'paid':(client.status==='Active'?'active':(client.status==='Overdue'?'over':'draft'));
-    bw.innerHTML=client.archived?'<span class="cl-archived-tag">Archived</span>':'<span class="pill '+statusPillClass+'">'+esc(client.status||'Lead')+'</span>';
+    const statusPillClass=metrics.status==='Paid'?'paid':(metrics.status==='Active'?'active':(metrics.status==='Overdue'?'over':'draft'));
+    bw.innerHTML=client.archived?'<span class="cl-archived-tag">Archived</span>':'<span class="pill '+statusPillClass+'">'+esc(metrics.status)+'</span>';
   }
-  const rev=document.getElementById('cl-detail-revenue');if(rev) rev.textContent=money(client.revenue||0);
-  const jobs=document.getElementById('cl-detail-jobs');if(jobs) jobs.textContent=client.jobs||0;
+  const rev=document.getElementById('cl-detail-revenue');if(rev) rev.textContent=money(metrics.revenue);
+  const jobs=document.getElementById('cl-detail-jobs');if(jobs) jobs.textContent=metrics.jobs;
   const avg=document.getElementById('cl-detail-avgval');
-  if(avg) avg.textContent=client.jobs&&client.revenue?moneyShort((client.revenue/client.jobs)):'—';
+  if(avg) avg.textContent=metrics.jobs&&metrics.revenue?moneyShort((metrics.revenue/metrics.jobs)):'—';
   const st=document.getElementById('cl-detail-status');
-  if(st){st.textContent=client.status||'Lead';st.style.color=client.status==='Overdue'?'var(--danger)':(client.status==='Paid'||client.status==='Active'?'var(--success)':'var(--muted)');}
+  if(st){st.textContent=metrics.status;st.style.color=metrics.status==='Overdue'?'var(--danger)':(metrics.status==='Paid'||metrics.status==='Active'?'var(--success)':'var(--muted)');}
   const ph=document.getElementById('cl-detail-phone');if(ph) ph.textContent=client.mobile||client.home_phone||'—';
   const em=document.getElementById('cl-detail-email');if(em) em.textContent=client.email||'—';
   const addr=document.getElementById('cl-detail-address');if(addr) addr.textContent=clientAddressText(client)||'—';
