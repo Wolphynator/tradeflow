@@ -8685,7 +8685,7 @@ async function checkViewerMode(){
 }
 
 function renderClientViewer(doc){
-  _otpVerified=false;_otpEmail='';_otpVerificationToken='';_otpPendingAction='accept';
+  _otpVerified=false;_otpVerificationToken='';_otpPendingAction='accept';_otpSending=false;
   const root=document.getElementById('viewer-root');
   const isInv=doc.type==='invoice';
   const isConvertedInv=isInv&&typeof doc.id==='string'&&doc.id.includes('(ref ');
@@ -8791,14 +8791,12 @@ function renderClientViewer(doc){
         <div id="vw-email-verify-panel" class="vw-sub-panel">
           <div class="vw-agreement">
             <div class="vw-agreement-title">Verify Your Identity</div>
-            <div class="vw-agreement-text" id="vw-otp-purpose">Enter the email address your contractor has on file to confirm your identity before responding.</div>
+            <div class="vw-agreement-text" id="vw-otp-purpose">We’ll send a verification code to the email address on this document.</div>
           </div>
           <div class="vw-sig-wrap">
-            <div class="vw-sig-label">Your email address</div>
-            <input type="email" id="vw-otp-email-input" class="vw-sig-input" placeholder="your@email.com" autocomplete="email" autocorrect="off" spellcheck="false">
             <div id="vw-otp-email-error" style="display:none;color:#dc2626;font-size:13px;margin:6px 0 0"></div>
             <div class="vw-sig-actions" style="margin-top:14px">
-              <button class="vw-sig-clear" onclick="vwShowSection(null)">Cancel</button>
+              <button class="vw-sig-clear" id="vw-cancel-otp-send-btn" onclick="vwCancelVerification()">Cancel</button>
               <button class="vw-sig-submit" id="vw-send-otp-btn" onclick="vwSendOtp()">Send Code</button>
             </div>
           </div>
@@ -8814,7 +8812,7 @@ function renderClientViewer(doc){
             <input type="text" id="vw-otp-code-input" class="vw-sig-input" placeholder="000000" maxlength="6" inputmode="numeric" autocomplete="one-time-code" style="letter-spacing:6px;font-size:22px;text-align:center">
             <div id="vw-otp-code-error" style="display:none;color:#dc2626;font-size:13px;margin:6px 0 0"></div>
             <div class="vw-sig-actions" style="margin-top:14px">
-              <button class="vw-sig-clear" onclick="vwShowSection('email-verify')">Back</button>
+              <button class="vw-sig-clear" onclick="vwCancelVerification()">Cancel verification</button>
               <button class="vw-sig-submit" id="vw-verify-otp-btn" onclick="vwVerifyOtp()">Verify</button>
             </div>
             <div style="text-align:center;margin-top:12px">
@@ -8997,9 +8995,9 @@ async function _renderSigToBase64(text){
 
 let _vwDeclineReason='';
 let _otpVerified=false;
-let _otpEmail='';
 let _otpVerificationToken='';
 let _otpPendingAction='accept';
+let _otpSending=false;
 
 function vwStartAccept(){
   vwStartVerifiedAction('accept');
@@ -9009,38 +9007,35 @@ function vwStartVerifiedAction(action){
   _otpPendingAction=action||'accept';
   if(_otpVerified&&_otpVerificationToken){vwShowSection(_otpPendingAction);return;}
   const purpose=document.getElementById('vw-otp-purpose');
-  if(purpose) purpose.textContent='Enter the email address your contractor has on file to confirm your identity before '+(_otpPendingAction==='accept'?'signing':_otpPendingAction==='decline'?'declining':'sending a query')+'.';
+  if(purpose) purpose.textContent='We’ll send a verification code to the email address on this document before '+(_otpPendingAction==='accept'?'signing':_otpPendingAction==='decline'?'declining':'sending a query')+'.';
   vwShowSection('email-verify');
 }
 
 async function vwSendOtp(){
-  const emailInput=document.getElementById('vw-otp-email-input');
+  if(_otpSending) return;
   const errEl=document.getElementById('vw-otp-email-error');
   const btn=document.getElementById('vw-send-otp-btn');
-  const email=(emailInput?.value||'').trim().toLowerCase();
-  if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
-    if(emailInput) emailInput.classList.add('error');
-    if(errEl){errEl.textContent='Please enter a valid email address.';errEl.style.display='block';}
-    return;
-  }
-  emailInput?.classList.remove('error');
+  const cancelBtn=document.getElementById('vw-cancel-otp-send-btn');
   if(errEl) errEl.style.display='none';
+  _otpSending=true;
   if(btn){btn.disabled=true;btn.textContent='Sending…';}
+  if(cancelBtn) cancelBtn.disabled=true;
   try{
-    const{data,error}=await sb.functions.invoke('send-otp',{body:{action:'send_otp',email,share_token:_viewerDoc?.shareToken}});
+    const{data,error}=await sb.functions.invoke('send-otp',{body:{action:'send_otp',share_token:_viewerDoc?.shareToken}});
     if(error||!data?.success){
       if(errEl){errEl.textContent=data?.error||'Failed to send code. Please try again.';errEl.style.display='block';}
-      if(btn){btn.disabled=false;btn.textContent='Send Code';}
       return;
     }
-    _otpEmail=email;
     const sentMsg=document.getElementById('vw-otp-sent-msg');
-    if(sentMsg) sentMsg.textContent='We sent a 6-digit code to '+email+'.';
+    if(sentMsg) sentMsg.textContent='We sent a 6-digit code to the email address on this document.';
     vwShowSection('otp-verify');
     document.getElementById('vw-otp-code-input')?.focus();
   }catch(e){
     if(errEl){errEl.textContent='Network error. Please try again.';errEl.style.display='block';}
+  }finally{
+    _otpSending=false;
     if(btn){btn.disabled=false;btn.textContent='Send Code';}
+    if(cancelBtn) cancelBtn.disabled=false;
   }
 }
 
@@ -9058,7 +9053,7 @@ async function vwVerifyOtp(){
   if(errEl) errEl.style.display='none';
   if(btn){btn.disabled=true;btn.textContent='Verifying…';}
   try{
-    const{data,error}=await sb.functions.invoke('send-otp',{body:{action:'verify_otp',email:_otpEmail,code,share_token:_viewerDoc?.shareToken}});
+    const{data,error}=await sb.functions.invoke('send-otp',{body:{action:'verify_otp',code,share_token:_viewerDoc?.shareToken}});
     if(error||!data?.success){
       if(errEl){errEl.textContent=data?.error||'Invalid or expired code. Please try again.';errEl.style.display='block';}
       if(btn){btn.disabled=false;btn.textContent='Verify';}
@@ -9080,15 +9075,17 @@ async function vwVerifyOtp(){
 }
 
 async function vwResendOtp(){
-  const emailInput=document.getElementById('vw-otp-email-input');
-  if(emailInput&&_otpEmail) emailInput.value=_otpEmail;
-  if(_otpEmail){
-    if(document.getElementById('vw-otp-code-input')) document.getElementById('vw-otp-code-input').value='';
-    vwShowSection('email-verify');
-    await vwSendOtp();
-  } else {
-    vwShowSection('email-verify');
-  }
+  const codeInput=document.getElementById('vw-otp-code-input');
+  if(codeInput) codeInput.value='';
+  vwShowSection('email-verify');
+  await vwSendOtp();
+}
+
+function vwCancelVerification(){
+  if(_otpSending) return;
+  const codeInput=document.getElementById('vw-otp-code-input');
+  if(codeInput) codeInput.value='';
+  vwShowSection(null);
 }
 
 function vwShowSection(type){
@@ -9208,7 +9205,7 @@ async function submitSignature(){
       piBlock.innerHTML='<div style="margin:0 0 12px;padding:12px 16px;border-top:1px solid var(--border)"><div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Payment Instructions</div><div style="font-size:12px;color:var(--text);line-height:1.7">'+_viewerDoc.paymentInstructions.map(esc).join('<br>')+'</div></div>';
     }
     notifyContractor({...doc,topic:doc.topic||rpcData?.ntfy_topic},'signed').catch(()=>{});
-    if(_otpEmail) sb.functions.invoke('send-otp',{body:{action:'send_confirmation',verification_token:verificationToken,contractor_name:doc.from||'Your contractor',doc_id:doc.id||''}}).catch(()=>{});
+    if(verificationToken) sb.functions.invoke('send-otp',{body:{action:'send_confirmation',verification_token:verificationToken,contractor_name:doc.from||'Your contractor',doc_id:doc.id||''}}).catch(()=>{});
   }
 }
 

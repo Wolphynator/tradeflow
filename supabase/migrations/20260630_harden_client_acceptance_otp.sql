@@ -50,7 +50,7 @@ DECLARE
 BEGIN
   IF p_document_type = 'estimate' THEN
     SELECT encode(
-      digest(
+      extensions.digest(
         convert_to(
           concat_ws('|',
             'estimate',
@@ -71,7 +71,7 @@ BEGIN
     WHERE e.id = p_document_id;
   ELSIF p_document_type = 'invoice' THEN
     SELECT encode(
-      digest(
+      extensions.digest(
         convert_to(
           concat_ws('|',
             'invoice',
@@ -169,7 +169,7 @@ BEGIN
   INTO v_otp
   FROM public.otp_tokens
   WHERE verification_token_hash = encode(
-      digest(convert_to(p_verification_token, 'UTF8'), 'sha256'),
+      extensions.digest(convert_to(p_verification_token, 'UTF8'), 'sha256'),
       'hex'
     )
     AND share_token = p_share_token

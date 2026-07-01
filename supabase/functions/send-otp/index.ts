@@ -6,8 +6,6 @@ const corsHeaders = {
 }
 
 const jsonHeaders = { ...corsHeaders, 'Content-Type': 'application/json' }
-const emailMismatchMessage = 'This email does not match the client email on this document.'
-
 function json(body: Record<string, unknown>, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: jsonHeaders })
 }
@@ -58,7 +56,6 @@ Deno.serve(async (req) => {
     const body = await req.json()
     const action = String(body?.action || '')
     const shareToken = String(body?.share_token || '').trim()
-    const submittedEmail = normalizeEmail(body?.email)
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY)
     const requestIp = (req.headers.get('cf-connecting-ip') || req.headers.get('x-forwarded-for') || '').split(',')[0].trim() || null
     const userAgent = req.headers.get('user-agent') || null
@@ -66,8 +63,8 @@ Deno.serve(async (req) => {
     if (!action) return json({ success: false, error: 'Missing action' }, 400)
 
     if (action === 'send_otp' || action === 'verify_otp') {
-      if (!shareToken || !validEmail(submittedEmail)) {
-        return json({ success: false, error: action === 'send_otp' ? emailMismatchMessage : 'Invalid or expired code. Please try again.' }, 400)
+      if (!shareToken) {
+        return json({ success: false, error: action === 'send_otp' ? 'Document verification is unavailable.' : 'Invalid or expired code. Please try again.' }, 400)
       }
 
       const { data: context, error: contextError } = await supabase.rpc('get_document_otp_context', {
@@ -76,13 +73,13 @@ Deno.serve(async (req) => {
 
       if (contextError || !context?.success) {
         return action === 'send_otp'
-          ? json({ success: false, error: emailMismatchMessage })
+          ? json({ success: false, error: 'Document verification is unavailable.' })
           : json({ success: false, error: 'Invalid or expired code. Please try again.' }, 403)
       }
 
       const savedEmail = normalizeEmail(context.client_email)
-      if (!savedEmail || submittedEmail !== savedEmail) {
-        return json({ success: false, error: emailMismatchMessage })
+      if (!validEmail(savedEmail)) {
+        return json({ success: false, error: action === 'send_otp' ? 'Document verification is unavailable.' : 'Invalid or expired code. Please try again.' })
       }
 
       if (action === 'send_otp') {
@@ -94,6 +91,13 @@ Deno.serve(async (req) => {
 
         if (countError) return json({ success: false, error: 'Could not start verification. Please try again.' }, 500)
         if ((count || 0) >= 3) return json({ success: false, error: 'Too many attempts. Please try again in 10 minutes.' }, 429)
+
+        // A newly issued code supersedes every older unused code for this document.
+        await supabase
+          .from('otp_tokens')
+          .update({ used_at: new Date().toISOString() })
+          .eq('share_token', shareToken)
+          .is('used_at', null)
 
         const code = randomDigits()
         const codeHash = await sha256(code)
