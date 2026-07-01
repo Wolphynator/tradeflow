@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
 
         if (countError) return json({ success: false, error: 'Could not start verification. Please try again.' }, 500)
         const sendCount = recentSends?.length || 0
-        if (sendCount >= 3) return json({ success: false, error: 'Too many codes sent. Please try again in 15 minutes.', retry_after_seconds: 900 }, 429)
+        if (sendCount >= 4) return json({ success: false, error: 'Too many codes sent. Please try again in 15 minutes.', retry_after_seconds: 900 }, 429)
 
         const lastSentAt = recentSends?.[0]?.created_at ? new Date(recentSends[0].created_at).getTime() : 0
         const elapsedMs = Date.now() - lastSentAt
@@ -164,8 +164,8 @@ Deno.serve(async (req) => {
         const sendNumber = sendCount + 1
         return json({
           success: true,
-          resend_available_in: sendNumber < 3 ? 10 : 900,
-          sends_remaining: Math.max(0, 3 - sendNumber),
+          resend_available_in: sendNumber < 4 ? 10 : 900,
+          sends_remaining: Math.max(0, 4 - sendNumber),
         })
       }
 
