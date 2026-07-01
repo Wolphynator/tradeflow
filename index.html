@@ -615,6 +615,27 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
 .cl-archived-tag{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;margin-top:3px}
 .cl-archived-card{opacity:.65}
 .cl-detail-actions{margin-top:14px;border-top:1px solid var(--border);padding-top:14px;display:flex;flex-direction:column;gap:8px}
+.cd-tabs{display:flex;border-bottom:2px solid var(--border);margin:0 16px}
+.cd-tab{flex:1;text-align:center;padding:11px 0;font-size:14px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-2px;transition:.15s}
+.cd-tab.on{color:var(--brand);border-bottom-color:var(--brand)}
+.cd-panel{display:none}.cd-panel.on{display:block}
+.ch-item{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:.1s}
+.ch-item:last-child{border-bottom:none}
+.ch-item:active{background:var(--bg)}
+.ch-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.ch-icon.inv{background:#f0fdf4;color:var(--brand)}
+.ch-icon.est{background:#eff6ff;color:#2563eb}
+.ch-main{flex:1;min-width:0}
+.ch-num{font-size:13.5px;font-weight:700;color:var(--text)}
+.ch-date{font-size:12px;color:var(--muted);margin-top:1px}
+.ch-right{text-align:right;flex-shrink:0}
+.ch-amt{font-size:14px;font-weight:700;color:var(--text)}
+.ch-status{font-size:11px;margin-top:2px;font-weight:600}
+.ch-status.paid{color:var(--success)}.ch-status.over{color:var(--danger)}.ch-status.sent{color:#f59e0b}.ch-status.draft{color:var(--muted)}.ch-status.signed{color:var(--brand)}
+.ch-summary{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:4px}
+.ch-sum-item{flex:1;text-align:center;padding:14px 8px}
+.ch-sum-val{font-size:18px;font-weight:800;color:var(--text)}
+.ch-sum-lbl{font-size:11px;color:var(--muted);margin-top:2px}
 .cl-del-btn{width:100%;background:var(--danger-light);color:var(--danger);border:1px solid rgba(220,38,38,.2);border-radius:12px;padding:13px;font-size:15px;font-weight:700;cursor:pointer}
 .cl-del-btn:active{background:var(--danger);color:white}
 .cl-arch-btn{width:100%;background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;border-radius:12px;padding:13px;font-size:15px;font-weight:600;cursor:pointer}
@@ -2132,31 +2153,42 @@ window.addEventListener('DOMContentLoaded',function(){
         <div style="margin-top:8px" id="cl-detail-badge-wrap"></div>
       </div>
     </div>
-    <div class="pad">
+    <div class="pad" style="padding-bottom:4px">
       <div class="det-grid">
         <div class="det-stat"><div class="ds-l">Total Revenue</div><div class="ds-v" id="cl-detail-revenue" style="color:var(--success)">—</div></div>
         <div class="det-stat"><div class="ds-l">Jobs Done</div><div class="ds-v" id="cl-detail-jobs">—</div></div>
         <div class="det-stat"><div class="ds-l">Avg Job Value</div><div class="ds-v" id="cl-detail-avgval" style="font-size:16px">—</div></div>
         <div class="det-stat"><div class="ds-l">Status</div><div class="ds-v" id="cl-detail-status" style="font-size:14px">—</div></div>
       </div>
-      <div class="sh"><span class="sh-t">Contact</span></div>
-      <div class="card" style="padding:13px 16px;margin-bottom:14px">
-        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13.5px"><span style="color:var(--muted)">Phone</span><span id="cl-detail-phone" style="font-weight:500">—</span></div>
-        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13.5px"><span style="color:var(--muted)">Email</span><span id="cl-detail-email" style="font-weight:500;color:var(--brand)">—</span></div>
-        <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13.5px"><span style="color:var(--muted)">Address</span><span id="cl-detail-address" style="font-weight:500;text-align:right">—</span></div>
+    </div>
+    <!-- Tab bar -->
+    <div class="cd-tabs">
+      <div class="cd-tab on" id="cd-tab-overview" onclick="switchClientDetailTab('overview')">Overview</div>
+      <div class="cd-tab" id="cd-tab-history" onclick="switchClientDetailTab('history')">History</div>
+    </div>
+    <!-- Overview panel -->
+    <div class="cd-panel on" id="cd-panel-overview">
+      <div class="pad">
+        <div class="sh"><span class="sh-t">Contact</span></div>
+        <div class="card" style="padding:13px 16px;margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13.5px"><span style="color:var(--muted)">Phone</span><span id="cl-detail-phone" style="font-weight:500">—</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13.5px"><span style="color:var(--muted)">Email</span><span id="cl-detail-email" style="font-weight:500;color:var(--brand)">—</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13.5px"><span style="color:var(--muted)">Address</span><span id="cl-detail-address" style="font-weight:500;text-align:right">—</span></div>
+        </div>
+        <div class="act-row">
+          <button class="btn-p" onclick="newEstimateForCurrentClient()">+ New Estimate</button>
+          <button class="btn-s" id="cl-detail-call-btn">Call</button>
+        </div>
+        <div class="cl-detail-actions" id="cl-detail-actions">
+          <button class="cl-arch-btn" id="cl-arch-toggle-btn" onclick="archiveCurrentClient()">Archive Customer</button>
+          <button class="cl-del-btn" onclick="confirmDeleteCurrentClient()">Delete Customer</button>
+        </div>
       </div>
-      <div class="sh"><span class="sh-t">Job History</span></div>
-      <div class="card" id="cl-detail-jobs-card" style="margin-bottom:14px">
-        <div style="padding:14px 16px;text-align:center;font-size:13px;color:var(--muted)">No job history yet.</div>
-      </div>
-      <div class="act-row">
-        <button class="btn-p" onclick="newEstimateForCurrentClient()">+ New Estimate</button>
-        <button class="btn-s" id="cl-detail-call-btn">Call</button>
-      </div>
-      <!-- Delete / Archive actions -->
-      <div class="cl-detail-actions" id="cl-detail-actions">
-        <button class="cl-arch-btn" id="cl-arch-toggle-btn" onclick="archiveCurrentClient()">Archive Customer</button>
-        <button class="cl-del-btn" onclick="confirmDeleteCurrentClient()">Delete Customer</button>
+    </div>
+    <!-- History panel -->
+    <div class="cd-panel" id="cd-panel-history">
+      <div id="cl-history-content">
+        <div style="text-align:center;padding:40px 16px;color:var(--muted);font-size:13px">Loading history…</div>
       </div>
     </div>
   </div>
@@ -5134,7 +5166,87 @@ function openClientDetail(index){
   if(callBtn) callBtn.onclick=()=>{if(client.mobile||client.home_phone)window.location.href='tel:'+(client.mobile||client.home_phone);};
   const archBtn=document.getElementById('cl-arch-toggle-btn');
   if(archBtn) archBtn.textContent=client.archived?'Restore Customer':'Archive Customer';
+  switchClientDetailTab('overview');
   goTo('screen-client-detail');
+}
+
+function switchClientDetailTab(tab){
+  ['overview','history'].forEach(t=>{
+    document.getElementById('cd-panel-'+t)?.classList.toggle('on',t===tab);
+    document.getElementById('cd-tab-'+t)?.classList.toggle('on',t===tab);
+  });
+  if(tab==='history'){
+    const client=savedClients[currentClientIndex];
+    if(client) loadClientHistory(client);
+  }
+}
+
+async function loadClientHistory(client){
+  const el=document.getElementById('cl-history-content');
+  if(!el) return;
+  if(!client?.id){
+    el.innerHTML='<div style="text-align:center;padding:40px 16px;color:var(--muted);font-size:13px">No history available.</div>';
+    return;
+  }
+  el.innerHTML='<div style="text-align:center;padding:40px 16px;color:var(--muted);font-size:13px">Loading…</div>';
+  const [invRes,estRes]=await Promise.all([
+    sb.from('invoices').select('id,number,issue_date,total,status,balance_due,client_id').eq('client_id',client.id).order('issue_date',{ascending:false}),
+    sb.from('estimates').select('id,number,issue_date,total,status,client_id').eq('client_id',client.id).order('issue_date',{ascending:false})
+  ]);
+  const invs=(invRes.data||[]).map(r=>({...r,_type:'invoice'}));
+  const ests=(estRes.data||[]).map(r=>({...r,_type:'estimate'}));
+  const all=[...invs,...ests].sort((a,b)=>{
+    const da=a.issue_date?new Date(a.issue_date).getTime():0;
+    const db=b.issue_date?new Date(b.issue_date).getTime():0;
+    return db-da;
+  });
+  if(!all.length){
+    el.innerHTML='<div style="text-align:center;padding:40px 16px;color:var(--muted);font-size:13px">No documents found for this client.</div>';
+    return;
+  }
+  const totalBilled=invs.reduce((s,r)=>s+(Number(r.total)||0),0);
+  const totalReceived=invs.reduce((s,r)=>{
+    const paid=invoicePaymentsTotal(r);
+    return s+(paid>0?paid:(invoiceDisplayStatus(r)==='Paid'?(Number(r.total)||0):0));
+  },0);
+  const statusColor={Paid:'paid',Signed:'signed',Overdue:'over',Sent:'sent',Draft:'draft',Accepted:'paid',Declined:'over'};
+  const fmtDate=d=>{if(!d)return'—';const dt=new Date(d);return dt.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});};
+  const rows=all.map(r=>{
+    const isInv=r._type==='invoice';
+    const st=isInv?invoiceDisplayStatus(r):(r.status||'Draft');
+    const sc=statusColor[st]||'draft';
+    const icon=isInv?'£':'📋';
+    const iconCls=isInv?'inv':'est';
+    const label=isInv?'Invoice':'Estimate';
+    return '<div class="ch-item" onclick="'+(isInv?'openInvoiceFromHistory("'+r.id+'")':'openEstimateFromHistory("'+r.id+'")')+'">'+
+      '<div class="ch-icon '+iconCls+'">'+icon+'</div>'+
+      '<div class="ch-main">'+
+        '<div class="ch-num">'+esc(r.number||label)+'</div>'+
+        '<div class="ch-date">'+label+' · '+fmtDate(r.issue_date)+'</div>'+
+      '</div>'+
+      '<div class="ch-right">'+
+        '<div class="ch-amt">'+money(Number(r.total)||0)+'</div>'+
+        '<div class="ch-status '+sc+'">'+esc(st)+'</div>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+  el.innerHTML=
+    '<div class="ch-summary">'+
+      '<div class="ch-sum-item"><div class="ch-sum-val">'+all.length+'</div><div class="ch-sum-lbl">Documents</div></div>'+
+      '<div class="ch-sum-item" style="border-left:1px solid var(--border)"><div class="ch-sum-val">'+money(totalBilled)+'</div><div class="ch-sum-lbl">Total Billed</div></div>'+
+      '<div class="ch-sum-item" style="border-left:1px solid var(--border)"><div class="ch-sum-val" style="color:var(--success)">'+money(totalReceived)+'</div><div class="ch-sum-lbl">Received</div></div>'+
+    '</div>'+
+    '<div class="card" style="margin:12px 16px">'+rows+'</div>';
+}
+
+function openInvoiceFromHistory(id){
+  const idx=invoices.findIndex(i=>i._id===id);
+  if(idx>=0) openInvoiceDetail(idx);
+}
+
+function openEstimateFromHistory(id){
+  const idx=estimates.findIndex(e=>e._id===id);
+  if(idx>=0) openEstimateDetail(idx);
 }
 
 function newEstimateForCurrentClient(){
