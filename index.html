@@ -8785,7 +8785,7 @@ function renderClientViewer(doc){
                     : `<div id="vw-identity-gate" style="margin:16px">
                         <div class="vw-agreement" style="margin:0 0 12px">
                           <div class="vw-agreement-title">Verify Your Identity</div>
-                          <div class="vw-agreement-text">To protect your security and prevent unauthorised signatures, we'll send a one-time verification code to the email address associated with this document.</div>
+                          <div class="vw-agreement-text">To accept this ${isInv?'invoice':'estimate'}, you must first verify your identity. We'll send a one-time verification code to the email address this ${isInv?'invoice':'estimate'} was sent to.</div>
                         </div>
                         <button class="vw-sig-submit" style="width:100%" onclick="vwBeginVerification()">Verify Identity</button>
                       </div>
