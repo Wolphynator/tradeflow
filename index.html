@@ -8574,7 +8574,9 @@ async function doEmailAction(){
       +'We look forward to working with you again.\n\n'
       +'Kind regards,\n'+bizName;
   document.getElementById('efm-body').value=bodyText;
-  _pendingEmail={to:email,subject,bodyText,fromName:bizName,link,clientFirst,docType,docId,total};
+  // to is display-only; the Edge Function always derives the recipient from the database
+  _pendingEmail={to:email,subject,bodyText,fromName:bizName,clientFirst,docType,docId,total,
+    shareToken:doc.shareToken||doc.share_token||''};
   setSendButtonsReady(['efm-send-btn','efm-open-btn','efm-mailto-btn'],true);document.getElementById('efm-client-btns')?.querySelectorAll('button').forEach(b=>{b.disabled=false;b.style.opacity='1';});
 }
 

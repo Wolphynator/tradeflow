@@ -1,7 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://tradesflowpro.com',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
@@ -153,8 +153,25 @@ Deno.serve(async (req) => {
       const code = String(body?.code || '').replace(/\s/g, '')
       if (!/^\d{6}$/.test(code)) return json({ success: false, error: 'Invalid or expired code. Please try again.' }, 400)
 
-      const codeHash = await sha256(code)
       const now = new Date().toISOString()
+
+      // Find the active (unexpired, unused) OTP row so we can check and update failed_attempts
+      const { data: activeOtp } = await supabase
+        .from('otp_tokens')
+        .select('id, failed_attempts')
+        .eq('share_token', shareToken)
+        .eq('email', savedEmail)
+        .is('used_at', null)
+        .gt('expires_at', now)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (activeOtp && (activeOtp.failed_attempts ?? 0) >= 5) {
+        return json({ success: false, error: 'Too many incorrect attempts. Please request a new code.' }, 429)
+      }
+
+      const codeHash = await sha256(code)
       const { data: otp, error: otpError } = await supabase
         .from('otp_tokens')
         .select('id')
@@ -170,7 +187,16 @@ Deno.serve(async (req) => {
         .limit(1)
         .maybeSingle()
 
-      if (otpError || !otp) return json({ success: false, error: 'Invalid or expired code. Please try again.' }, 403)
+      if (otpError || !otp) {
+        if (activeOtp) {
+          await supabase
+            .from('otp_tokens')
+            .update({ failed_attempts: (activeOtp.failed_attempts ?? 0) + 1 })
+            .eq('id', activeOtp.id)
+            .is('used_at', null)
+        }
+        return json({ success: false, error: 'Invalid or expired code. Please try again.' }, 403)
+      }
 
       const verificationToken = randomToken()
       const verificationTokenHash = await sha256(verificationToken)
