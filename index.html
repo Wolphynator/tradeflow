@@ -597,8 +597,27 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
 .cl-filter-bar::-webkit-scrollbar{display:none}
 .cl-filter{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:13px;font-weight:500;white-space:nowrap;color:var(--muted);flex-shrink:0;cursor:pointer;transition:all .15s}
 .cl-filter.on{background:var(--brand);border-color:var(--brand);color:white;font-weight:700}
-.cl-rank{position:absolute;top:10px;right:12px;font-size:11px;font-weight:800;color:var(--muted);background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:2px 8px;line-height:1.4}
-.cl-rank.top3{color:#b45309;background:#fef3dc;border-color:#fde68a}
+.ci-cards-wrap{padding:0 16px 4px;overflow-x:auto;display:flex;gap:10px;scrollbar-width:none}
+.ci-cards-wrap::-webkit-scrollbar{display:none}
+.ci-card{flex-shrink:0;width:164px;border-radius:12px;padding:12px 14px;border:1px solid var(--border);background:var(--surface);cursor:pointer;transition:.1s}
+.ci-card:active{opacity:.85}
+.ci-card.positive{border-left:3px solid var(--success);background:#f0fdf4}
+.ci-card.attention{border-left:3px solid var(--danger);background:#fef2f2}
+.ci-card.neutral{border-left:3px solid #94a3b8}
+.ci-card-headline{font-size:12.5px;font-weight:700;color:var(--text);line-height:1.35}
+.ci-card-body{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.35}
+.ci-ranked-list{margin:0 16px 24px;border-radius:12px;overflow:hidden;border:1px solid var(--border)}
+.ci-ranked-item{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border);background:var(--surface);cursor:pointer;transition:.1s}
+.ci-ranked-item:last-child{border-bottom:none}
+.ci-ranked-item:active{background:var(--bg)}
+.ci-rank-num{font-size:12px;font-weight:800;color:var(--muted);width:22px;text-align:center;flex-shrink:0}
+.ci-rank-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.ci-rank-name{flex:1;min-width:0;font-size:13.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ci-rank-rev{font-size:13px;font-weight:700;color:var(--text);flex-shrink:0}
+.ci-tier{font-size:10px;font-weight:800;padding:2px 7px;border-radius:10px;flex-shrink:0;margin-left:4px}
+.ci-tier.gold{background:#fef3dc;color:#b45309;border:1px solid #fde68a}
+.ci-tier.silver{background:#f1f5f9;color:#475569;border:1px solid #e2e8f0}
+.ci-section-lbl{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.7px;text-transform:uppercase;padding:16px 16px 6px}
 .cl-stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
 .cl-stat{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px;text-align:center}
 .cl-stat-val{font-size:19px;font-weight:700}
@@ -2037,7 +2056,7 @@ window.addEventListener('DOMContentLoaded',function(){
       <div class="cl-filter on" data-cf="Active" onclick="setClientFilter('Active')">Active</div>
       <div class="cl-filter" data-cf="All" onclick="setClientFilter('All')">All</div>
       <div class="cl-filter" data-cf="Archived" onclick="setClientFilter('Archived')">Archived</div>
-      <div class="cl-filter" data-cf="Top" onclick="setClientFilter('Top')">Top Clients</div>
+      <div class="cl-filter" onclick="openClientInsights()">Client Insights</div>
     </div>
     <input id="client-search" class="finput" placeholder="Search by name, email, phone..." style="margin-bottom:14px" oninput="renderClientList()">
     <div id="client-list"></div>
@@ -2245,6 +2264,21 @@ window.addEventListener('DOMContentLoaded',function(){
     <div class="manage-sheet-actions" style="margin-top:8px">
       <button class="cancel" style="width:100%" onclick="closeClientWarnModal()">Cancel</button>
     </div>
+  </div>
+</div>
+
+<!--  SCREEN: CLIENT INSIGHTS  -->
+<div id="screen-client-insights" class="screen">
+  <div class="top-nav">
+    <div class="back-btn back-arrow" onclick="goBack()" aria-label="Back">←</div>
+    <div class="nav-block"><div class="nav-title">Client Insights</div><div class="nav-sub" id="ci-nav-sub">—</div></div>
+  </div>
+  <div class="scroll">
+    <div style="padding:16px 16px 0" id="ci-standout"></div>
+    <div class="ci-section-lbl">Insights</div>
+    <div id="ci-cards"></div>
+    <div class="ci-section-lbl">All Clients</div>
+    <div id="ci-ranked"></div>
   </div>
 </div>
 
@@ -5078,32 +5112,28 @@ function renderClientList(){
   if(!list) return;
   const avColors=['#e8f4ed','#eff6ff','#fef2f2','#f0f0fe','#fef3dc','#f0fdf4','#fff1f2','#f5f3ff'];
   const avTexts=['var(--brand)','#1d4ed8','#dc2626','#5b45c7','#b45309','#15803d','#be185d','#6d28d9'];
-  const isTop=clientFilter==='Top';
-  let filtered=savedClients.map((c,i)=>({c,i})).filter(({c})=>{
-    if(isTop && c.archived) return false;
-    if(!isTop && clientFilter==='Active' && c.archived) return false;
-    if(!isTop && clientFilter==='Archived' && !c.archived) return false;
+  const filtered=savedClients.map((c,i)=>({c,i})).filter(({c})=>{
+    if(clientFilter==='Active' && c.archived) return false;
+    if(clientFilter==='Archived' && !c.archived) return false;
     if(q && !`${c.name} ${c.type} ${c.email} ${c.mobile} ${c.home_phone} ${clientLocation(c)}`.toLowerCase().includes(q)) return false;
     return true;
   });
-  if(isTop) filtered=filtered.map(({c,i})=>({c,i,_rev:clientMetrics(c).revenue})).sort((a,b)=>b._rev-a._rev);
   if(!filtered.length){
     list.innerHTML='<div class="card" style="padding:20px;text-align:center;color:var(--muted)">'+
-      (clientFilter==='Archived'?'No archived customers.':isTop?'No clients with revenue yet.':q?'No customers match your search.':'No customers yet. Tap + to add one.')+'</div>';
+      (clientFilter==='Archived'?'No archived customers.':q?'No customers match your search.':'No customers yet. Tap + to add one.')+'</div>';
     return;
   }
   const statusColor=s=>s==='Overdue'?'var(--danger)':(s==='Paid'||s==='Active'?'var(--success)':'var(--muted)');
-  list.innerHTML=filtered.map(({c,i},rank)=>{
+  list.innerHTML=filtered.map(({c,i})=>{
     const metrics=clientMetrics(c);
     const ci=i%avColors.length;
     const archived=c.archived?'<span class="cl-archived-tag">Archived</span>':'';
     const checkHtml=clientSelectMode?'<div class="cl-check" onclick="event.stopPropagation();toggleClientSelect('+i+')">'+(clientSelectedSet.has(i)?'✓':'')+'</div>':'';
     const addrLine=clientAddrLine(c);
     const cityPc=clientCityPostcode(c);
-    const rankBadge=isTop?'<div class="cl-rank'+(rank<3?' top3':'')+'">'+(['🥇','🥈','🥉'][rank]||('#'+(rank+1)))+'</div>':'';
     return '<div class="client-card'+(clientSelectMode?' cl-selectable':'')+(c.archived?' cl-archived-card':'')+(clientSelectedSet.has(i)?' cl-checked':'')+'" '+
       (clientSelectMode?'onclick="toggleClientSelect('+i+')"':'onclick="openClientDetail('+i+')"')+'>'+
-      checkHtml+rankBadge+
+      checkHtml+
       '<div class="cc-top"><div class="cc-av" style="background:'+avColors[ci]+';color:'+avTexts[ci]+'">'+initials(c.name)+'</div>'+
       '<div style="flex:1;min-width:0"><div class="cc-name">'+esc(c.name)+'</div>'+
       '<div class="cc-loc">'+esc(cityPc||'No address saved')+'</div>'+
@@ -5254,6 +5284,205 @@ function openInvoiceFromHistory(id){
 function openEstimateFromHistory(id){
   const idx=estimates.findIndex(e=>e._id===id);
   if(idx>=0) openEstimateDetail(idx);
+}
+
+/* ── Client Intelligence ── */
+let _ciCache=null;
+
+function openClientInsights(){
+  _ciCache=null;
+  renderClientInsights();
+  goTo('screen-client-insights');
+}
+
+function scoreClients(clients,weights){
+  const active=clients.map((c,i)=>({c,i})).filter(({c})=>!c.archived);
+  if(!active.length) return[];
+  const allM=active.map(({c})=>clientMetrics(c));
+  const maxRev=Math.max(...allM.map(m=>m.revenue),1);
+  const scored=active.map(({c,i},j)=>{
+    const m=allM[j];
+    const factors={revenue:(m.revenue/maxRev)*100};
+    const total=Object.entries(weights).reduce((s,[k,v])=>s+(factors[k]||0)*v,0);
+    return{client:c,index:i,metrics:m,score:total,factors};
+  }).sort((a,b)=>b.score-a.score);
+  const n=scored.length;
+  const hasTiers=n>=5;
+  const goldCut=hasTiers?Math.ceil(n*.2):0;
+  const silverCut=hasTiers?Math.ceil(n*.5):0;
+  return scored.map((e,rank)=>({...e,rank:rank+1,
+    tier:hasTiers?(rank<goldCut?'gold':rank<silverCut?'silver':null):null
+  }));
+}
+
+function computeClientInsights(clients,invs,ests){
+  const insights=[];
+  const active=clients.map((c,i)=>({c,i})).filter(({c})=>!c.archived);
+  const now=new Date();
+  const ms30=30*864e5,ms60=60*864e5,ms90=90*864e5;
+  for(const{c,i}of active){
+    const m=clientMetrics(c);
+    const nameKey=String(c.name||'').trim().toLowerCase();
+    const cInvs=invs.filter(inv=>(c.id&&inv.client_id===c.id)||(!inv.client_id&&String(inv.client||'').trim().toLowerCase()===nameKey)).filter(inv=>invoiceDisplayStatus(inv)!=='Cancelled');
+    const cEsts=ests.filter(est=>(c.id&&est.client_id===c.id)||(!est.client_id&&String(est.client||'').trim().toLowerCase()===nameKey));
+    const sortedInvs=[...cInvs].sort((a,b)=>(b.date?new Date(b.date):0)-(a.date?new Date(a.date):0));
+    const lastInvDate=sortedInvs[0]?.date?new Date(sortedInvs[0].date):null;
+    // Overdue + at least 2 invoices
+    const hasOverdue=cInvs.some(inv=>invoiceDisplayStatus(inv)==='Overdue');
+    if(hasOverdue&&cInvs.length>=2){
+      insights.push({type:'needs_attention',clientIndex:i,
+        headline:c.name+' has an overdue invoice',
+        body:cInvs.length+' invoices on record',severity:'attention',priority:10});
+    }
+    // Job count milestone (crossed this month)
+    const jobMilestones=[5,10,25,50,100];
+    if(jobMilestones.includes(m.jobs)&&lastInvDate&&(now-lastInvDate)<ms30){
+      insights.push({type:'milestone_jobs',clientIndex:i,
+        headline:m.jobs+' jobs completed with '+c.name,
+        body:'A strong working relationship',severity:'positive',priority:8});
+    }
+    // Loyalty year milestone
+    if(c.created_at){
+      const since=new Date(c.created_at);
+      for(const yr of[1,2,3,5,10]){
+        const mark=new Date(since);mark.setFullYear(mark.getFullYear()+yr);
+        if(mark>(new Date(now-ms30))&&mark<=now){
+          insights.push({type:'milestone_loyalty',clientIndex:i,
+            headline:c.name+' has been a customer for '+yr+(yr===1?' year':' years'),
+            body:m.jobs+' jobs · '+moneyShort(m.revenue)+' total',severity:'positive',priority:9});
+        }
+      }
+    }
+    // Inactive: no activity in 60+ days with 2+ jobs
+    if(!hasOverdue&&m.jobs>=2&&lastInvDate&&(now-lastInvDate)>ms60){
+      const days=Math.floor((now-lastInvDate)/864e5);
+      insights.push({type:'inactive',clientIndex:i,
+        headline:c.name+' · no activity for '+days+' days',
+        body:'Last job: '+lastInvDate.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}),
+        severity:'neutral',priority:5});
+    }
+    // New client with first job (joined within 90 days)
+    if(c.created_at){
+      const since=new Date(c.created_at);
+      if((now-since)<ms90&&m.jobs>=1){
+        insights.push({type:'new_client',clientIndex:i,
+          headline:'New customer: '+c.name,
+          body:'Joined '+since.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' · '+m.jobs+(m.jobs===1?' job':' jobs'),
+          severity:'positive',priority:3});
+      }
+    }
+    // Estimate win rate (min 3 sent)
+    const sentEsts=cEsts.filter(e=>['Sent','Viewed','Accepted','Converted','Declined'].includes(estimateDisplayStatus(e)));
+    const wonEsts=sentEsts.filter(e=>['Accepted','Converted'].includes(estimateDisplayStatus(e)));
+    if(sentEsts.length>=3&&wonEsts.length/sentEsts.length>=0.8){
+      insights.push({type:'estimate_champion',clientIndex:i,
+        headline:c.name+' accepts most estimates',
+        body:wonEsts.length+' of '+sentEsts.length+' accepted',
+        severity:'positive',priority:4});
+    }
+  }
+  return insights.sort((a,b)=>b.priority-a.priority);
+}
+
+function renderClientInsights(){
+  if(!_ciCache){
+    const scored=scoreClients(savedClients,{revenue:1.0});
+    const insights=computeClientInsights(savedClients,invoices,estimates);
+    _ciCache={scored,insights};
+  }
+  const{scored,insights}=_ciCache;
+  const sub=document.getElementById('ci-nav-sub');
+  const activeCount=savedClients.filter(c=>!c.archived).length;
+  if(sub) sub.textContent=activeCount+' active client'+(activeCount===1?'':'s');
+  _renderCIStandout(scored,insights);
+  _renderCICards(insights);
+  _renderCIRanked(scored);
+}
+
+function _renderCIStandout(scored,insights){
+  const el=document.getElementById('ci-standout');
+  if(!el) return;
+  const avColors=['#e8f4ed','#eff6ff','#fef2f2','#f0f0fe','#fef3dc','#f0fdf4','#fff1f2','#f5f3ff'];
+  const avTexts=['var(--brand)','#1d4ed8','#dc2626','#5b45c7','#b45309','#15803d','#be185d','#6d28d9'];
+  if(!scored.length){
+    el.innerHTML='<div style="padding:24px 16px;text-align:center;color:var(--muted);font-size:13px">Add a client and complete a job to see insights.</div>';
+    return;
+  }
+  let clientIndex,headline,subline,severity='positive';
+  const top=insights[0];
+  if(top){
+    clientIndex=top.clientIndex;headline=top.headline;subline=top.body;severity=top.severity;
+  } else {
+    const s=scored[0];
+    clientIndex=s.index;
+    headline='Your most valuable client';
+    subline=money(s.metrics.revenue)+' · '+s.metrics.jobs+(s.metrics.jobs===1?' job':' jobs');
+  }
+  const client=savedClients[clientIndex];
+  if(!client){el.innerHTML='';return;}
+  const m=clientMetrics(client);
+  const ci=clientIndex%avColors.length;
+  const borderColor=severity==='attention'?'var(--danger)':severity==='neutral'?'#94a3b8':'var(--brand)';
+  el.innerHTML=
+    '<div style="border:1px solid var(--border);border-left:4px solid '+borderColor+';border-radius:14px;background:var(--surface);overflow:hidden">'+
+      '<div style="font-size:10px;font-weight:800;letter-spacing:.7px;text-transform:uppercase;color:'+borderColor+';padding:12px 16px 0">Standout Client</div>'+
+      '<div style="padding:10px 16px;display:flex;align-items:center;gap:12px">'+
+        '<div style="width:48px;height:48px;border-radius:50%;background:'+avColors[ci]+';color:'+avTexts[ci]+';display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;flex-shrink:0">'+initials(client.name)+'</div>'+
+        '<div style="min-width:0">'+
+          '<div style="font-size:17px;font-weight:700;color:var(--text)">'+esc(client.name)+'</div>'+
+          '<div style="font-size:12px;color:var(--muted);margin-top:2px">'+esc(clientCityPostcode(client)||'No address saved')+'</div>'+
+        '</div>'+
+      '</div>'+
+      '<div style="display:flex;gap:24px;padding:0 16px 10px 76px">'+
+        '<div><div style="font-size:16px;font-weight:800;color:var(--text)">'+money(m.revenue)+'</div><div style="font-size:11px;color:var(--muted);margin-top:1px">Revenue</div></div>'+
+        '<div><div style="font-size:16px;font-weight:800;color:var(--text)">'+m.jobs+'</div><div style="font-size:11px;color:var(--muted);margin-top:1px">Jobs</div></div>'+
+      '</div>'+
+      '<div style="font-size:12.5px;color:var(--text);padding:8px 16px 14px;border-top:1px solid var(--border)">'+esc(headline)+'</div>'+
+    '</div>';
+}
+
+function _renderCICards(insights){
+  const el=document.getElementById('ci-cards');
+  if(!el) return;
+  const cards=insights.slice(1,9);
+  if(!cards.length){
+    el.innerHTML='<div style="padding:0 16px 12px;font-size:13px;color:var(--muted)">More insights will appear as you add jobs and clients.</div>';
+    return;
+  }
+  el.innerHTML='<div class="ci-cards-wrap">'+
+    cards.map(ins=>{
+      const c=savedClients[ins.clientIndex];
+      if(!c) return'';
+      return'<div class="ci-card '+ins.severity+'" onclick="openClientDetail('+ins.clientIndex+')">'+
+        '<div class="ci-card-headline">'+esc(ins.headline)+'</div>'+
+        '<div class="ci-card-body">'+esc(ins.body)+'</div>'+
+      '</div>';
+    }).join('')+
+  '</div>';
+}
+
+function _renderCIRanked(scored){
+  const el=document.getElementById('ci-ranked');
+  if(!el) return;
+  if(!scored.length){
+    el.innerHTML='<div style="padding:16px;text-align:center;color:var(--muted);font-size:13px">No clients yet.</div>';
+    return;
+  }
+  const avColors=['#e8f4ed','#eff6ff','#fef2f2','#f0f0fe','#fef3dc','#f0fdf4','#fff1f2','#f5f3ff'];
+  const avTexts=['var(--brand)','#1d4ed8','#dc2626','#5b45c7','#b45309','#15803d','#be185d','#6d28d9'];
+  el.innerHTML='<div class="ci-ranked-list">'+
+    scored.map(({client:c,index:i,metrics:m,rank,tier})=>{
+      const ci=i%avColors.length;
+      const tierHtml=tier?'<span class="ci-tier '+tier+'">'+(tier==='gold'?'Gold':'Silver')+'</span>':'';
+      return'<div class="ci-ranked-item" onclick="openClientDetail('+i+')">'+
+        '<div class="ci-rank-num">#'+rank+'</div>'+
+        '<div class="ci-rank-av" style="background:'+avColors[ci]+';color:'+avTexts[ci]+'">'+initials(c.name)+'</div>'+
+        '<div class="ci-rank-name">'+esc(c.name)+'</div>'+
+        '<div class="ci-rank-rev">'+moneyShort(m.revenue)+'</div>'+
+        tierHtml+
+      '</div>';
+    }).join('')+
+  '</div>';
 }
 
 function newEstimateForCurrentClient(){
