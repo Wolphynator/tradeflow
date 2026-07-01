@@ -810,389 +810,244 @@ window.addEventListener('DOMContentLoaded',function(){
     bx.lineCap='round';bx.lineJoin='round';
     bx.strokeStyle=SPC.G;bx.fillStyle=SPC.G;
 
-    /* Logo-area projection glow on canvas */
-    var lgx=W*.5,lgy=H*.43,pulse=.82+.18*Math.sin(pulseT*Math.PI*2);
-    var g0=bx.createRadialGradient(lgx,lgy,0,lgx,lgy,Math.min(W,H)*.30);
-    g0.addColorStop(0,SPC.GA+(0.08*pulse)+')');
-    g0.addColorStop(.45,SPC.GA+(0.03*pulse)+')');
-    g0.addColorStop(1,'rgba(57,255,20,0)');
+    /* ── PERSPECTIVE SETUP ── */
+    var HL=H*.38;
+    var VP1x=-W*.55,VP1y=HL;
+    var VP2x=W*1.42,VP2y=HL;
+    var BX=W*.44;
+    var GROUND=H*.72;
+    var ROOF=H*.17;
+    var storeys=4,flrH=(GROUND-ROOF)/storeys,floors=[];
+    for(var i=0;i<=storeys;i++)floors.push(GROUND-i*flrH);
+    var tL=.34,tR=.22;
+    function Lv(x,y,t){return{x:x+(VP1x-x)*t,y:y+(VP1y-y)*t};}
+    function Rv(x,y,t){return{x:x+(VP2x-x)*t,y:y+(VP2y-y)*t};}
+    var LBb=Lv(BX,GROUND,tL),LBt=Lv(BX,ROOF,tL);
+    var RBb=Rv(BX,GROUND,tR),RBt=Rv(BX,ROOF,tR);
+
+    /* ── PULSING AMBIENT + UNDER-LOGO GLOW ── */
+    var pulse=.8+.2*Math.sin(pulseT*Math.PI*2);
+    var logoY=H*.41;
+    var g0=bx.createRadialGradient(W*.5,logoY,0,W*.5,logoY,W*.75);
+    g0.addColorStop(0,SPC.GA+(0.12*pulse)+')');
+    g0.addColorStop(.38,SPC.GA+(0.04*pulse)+')');
+    g0.addColorStop(1,'rgba(0,0,0,0)');
     bx.fillStyle=g0;bx.fillRect(0,0,W,H);
+    var g1=bx.createRadialGradient(W*.5,logoY+H*.12,0,W*.5,logoY+H*.12,W*.38);
+    g1.addColorStop(0,SPC.GA+(0.28*pulse)+')');
+    g1.addColorStop(.45,SPC.GA+(0.08*pulse)+')');
+    g1.addColorStop(1,'rgba(0,0,0,0)');
+    bx.fillStyle=g1;bx.fillRect(0,0,W,H);
     bx.fillStyle=SPC.G;
 
-    /* ── DRAWING BORDER FRAME ── */
-    var fp=ph(prog,0,.07);
-    if(fp>0){
-      bx.globalAlpha=.35*fp;bx.lineWidth=1.1;bx.setLineDash([]);
-      rc(bx,.015,.008,.970,.984,fp);
-      bx.globalAlpha=.18*fp;bx.lineWidth=.6;
-      rc(bx,.032,.018,.937,.964,fp);
-      bx.globalAlpha=1;
-    }
-
-    /* ── GRID ── */
-    var gp=ph(prog,0,.18);
-    if(gp>0){
-      bx.globalAlpha=.07*gp;bx.lineWidth=.4;bx.setLineDash([]);
-      for(var gy=.08;gy<1;gy+=.08){bx.beginPath();bx.moveTo(0,gy*H);bx.lineTo(W,gy*H);bx.stroke();}
-      for(var gx=.08;gx<1;gx+=.08){bx.beginPath();bx.moveTo(gx*W,0);bx.lineTo(gx*W,H);bx.stroke();}
-      bx.globalAlpha=1;
-    }
-
-    /* ── GRID COLUMN/ROW REFERENCES ── */
-    var grp=ph(prog,.04,.22);
-    if(grp>0){
-      bx.globalAlpha=.20*grp;
-      bx.font='bold '+(H*.013)+'px "Courier New",monospace';
-      bx.textAlign='center';bx.textBaseline='middle';
-      ['A','B','C','D','E','F','G','H'].forEach(function(l,i){bx.fillText(l,(0.08+i*.12)*W,.011*H);});
-      ['1','2','3','4','5','6','7','8'].forEach(function(n,i){bx.fillText(n,.011*W,(0.08+i*.12)*H);});
-      bx.globalAlpha=1;
-    }
-
-    /* ══════════════════════════════════════
-       BUILDING ELEVATION  (top, y: 0.02-0.31)
-       Modern 3-storey commercial building
-    ══════════════════════════════════════ */
-
-    /* Ground line + foundation hatch */
-    var e0=ph(prog,.04,.17);
-    if(e0>0){
-      bx.globalAlpha=.50*e0;bx.lineWidth=1.6;bx.setLineDash([]);
-      ln(bx,.04*W,.31*H,.96*W,.31*H,e0);
-      bx.globalAlpha=.20*e0;bx.lineWidth=.55;
-      for(var fi=0;fi<11;fi++){ln(bx,(.04+fi*.083)*W,.31*H,(.018+fi*.083)*W,.328*H,e0);}
-    }
-
-    /* Main building outline */
-    var e1=ph(prog,.06,.26);
-    if(e1>0){
-      bx.globalAlpha=.46*e1;bx.lineWidth=1.6;bx.setLineDash([]);
-      pl(bx,[[.11,.31],[.11,.05],[.135,.05],[.135,.022],[.865,.022],[.865,.05],[.89,.05],[.89,.31]],e1);
-    }
-
-    /* Parapet detail */
-    var e1b=ph(prog,.14,.30);
-    if(e1b>0){
-      bx.globalAlpha=.35*e1b;bx.lineWidth=1.1;bx.setLineDash([]);
-      pl(bx,[[.135,.022],[.135,.005],[.865,.005],[.865,.022]],e1b);
-      /* Penthouse box */
-      rc(bx,.39,.005,.22,.018,e1b);
-    }
-
-    /* Floor slab lines */
-    var e2=ph(prog,.14,.30);
-    if(e2>0){
-      bx.globalAlpha=.36*e2;bx.lineWidth=1.2;bx.setLineDash([]);
-      ln(bx,.11*W,.12*H,.89*W,.12*H,e2);
-      ln(bx,.11*W,.21*H,.89*W,.21*H,e2);
-    }
-
-    /* Structural grid columns (dashed) */
-    var e3=ph(prog,.17,.33);
-    if(e3>0){
-      bx.globalAlpha=.14*e3;bx.lineWidth=.6;bx.setLineDash([4,4]);
-      [.28,.40,.50,.60,.72].forEach(function(cx){ln(bx,cx*W,.022*H,cx*W,.31*H,e3);});
-      bx.setLineDash([]);
-    }
-
-    /* Windows — top floor (y .025-.10) */
-    var wt=ph(prog,.20,.42);
-    if(wt>0){
-      bx.globalAlpha=.36*wt;bx.lineWidth=1.0;bx.setLineDash([]);
-      [[.145,.07],[.225,.07],[.325,.07],[.425,.07],[.525,.07],[.625,.07],[.725,.07],[.825,.07]].forEach(function(w){
-        rc(bx,w[0]-.045,.026,.07,.078,wt);
+    /* ── CORNER BRACKETS ── */
+    var pCF=ph(prog,0,.07);
+    if(pCF>0){
+      bx.globalAlpha=.30*pCF;bx.lineWidth=1.1;bx.setLineDash([]);
+      var cs=Math.min(W,H)*.042;
+      [[W*.02,H*.01,1,1],[W*.98,H*.01,-1,1],[W*.02,H*.99,1,-1],[W*.98,H*.99,-1,-1]].forEach(function(c){
+        bx.beginPath();bx.moveTo(c[0]+c[2]*cs,c[1]);bx.lineTo(c[0],c[1]);bx.lineTo(c[0],c[1]+c[3]*cs);bx.stroke();
       });
+      bx.globalAlpha=1;
     }
 
-    /* Windows — mid floor (y .125-.195) */
-    var wm=ph(prog,.24,.46);
-    if(wm>0){
-      bx.globalAlpha=.36*wm;bx.lineWidth=1.0;bx.setLineDash([]);
-      [[.145,.07],[.225,.07],[.325,.07],[.425,.07],[.525,.07],[.625,.07],[.725,.07],[.825,.07]].forEach(function(w){
-        rc(bx,w[0]-.045,.125,.07,.078,wm);
+    /* ── PERSPECTIVE GROUND GRID ── */
+    var pGG=ph(prog,0,.20);
+    if(pGG>0){
+      bx.globalAlpha=.10*pGG;bx.lineWidth=.5;bx.setLineDash([]);
+      for(var gi=0;gi<=14;gi++){var gx=gi/14*W;var ep=Rv(gx,GROUND,.75);ln(bx,gx,GROUND,ep.x,ep.y,pGG);}
+      for(var gi=0;gi<=14;gi++){var gx=gi/14*W;var ep=Lv(gx,GROUND,.75);ln(bx,gx,GROUND,ep.x,ep.y,pGG);}
+      bx.globalAlpha=1;
+    }
+
+    /* ── BUILDING FRONT VERTICAL EDGE ── */
+    var pFE=ph(prog,.04,.16);
+    if(pFE>0){bx.globalAlpha=.50*pFE;bx.lineWidth=1.7;bx.setLineDash([]);ln(bx,BX,GROUND,BX,ROOF,pFE);bx.globalAlpha=1;}
+
+    /* ── LEFT FACE OUTLINE ── */
+    var pLF=ph(prog,.06,.26);
+    if(pLF>0){
+      bx.globalAlpha=.42*pLF;bx.lineWidth=1.4;bx.setLineDash([]);
+      ln(bx,BX,GROUND,LBb.x,LBb.y,pLF);
+      ln(bx,BX,ROOF,LBt.x,LBt.y,pLF);
+      ln(bx,LBb.x,LBb.y,LBt.x,LBt.y,pLF);
+      bx.globalAlpha=1;
+    }
+
+    /* ── RIGHT FACE OUTLINE ── */
+    var pRF=ph(prog,.08,.28);
+    if(pRF>0){
+      bx.globalAlpha=.30*pRF;bx.lineWidth=1.1;bx.setLineDash([]);
+      ln(bx,BX,GROUND,RBb.x,RBb.y,pRF);
+      ln(bx,BX,ROOF,RBt.x,RBt.y,pRF);
+      ln(bx,RBb.x,RBb.y,RBt.x,RBt.y,pRF);
+      bx.globalAlpha=1;
+    }
+
+    /* ── ROOF SURFACE ── */
+    var pRoof=ph(prog,.14,.30);
+    if(pRoof>0){
+      bx.globalAlpha=.28*pRoof;bx.lineWidth=1.0;bx.setLineDash([]);
+      pl(bx,[[LBt.x/W,LBt.y/H],[BX/W,ROOF/H],[RBt.x/W,RBt.y/H]],pRoof);
+      var pH2=(GROUND-ROOF)*.042;
+      var PL=Lv(BX,ROOF-pH2,tL),PR=Rv(BX,ROOF-pH2,tR);
+      bx.globalAlpha=.20*pRoof;
+      ln(bx,BX,ROOF-pH2,PL.x,PL.y,pRoof);
+      ln(bx,BX,ROOF-pH2,PR.x,PR.y,pRoof);
+      ln(bx,BX,ROOF,BX,ROOF-pH2,pRoof);
+      bx.globalAlpha=1;
+    }
+
+    /* ── FLOOR SLABS ── */
+    var pFS=ph(prog,.14,.34);
+    if(pFS>0){
+      bx.lineWidth=.9;bx.setLineDash([]);
+      floors.forEach(function(fy,i){
+        if(i===0||i===floors.length-1)return;
+        var eL=Lv(BX,fy,tL),eR=Rv(BX,fy,tR);
+        bx.globalAlpha=.32*pFS;ln(bx,BX,fy,eL.x,eL.y,pFS);
+        bx.globalAlpha=.22*pFS;ln(bx,BX,fy,eR.x,eR.y,pFS);
       });
-    }
-
-    /* Ground floor — large glazed bays + entrance */
-    var wg=ph(prog,.27,.50);
-    if(wg>0){
-      bx.globalAlpha=.40*wg;bx.lineWidth=1.2;bx.setLineDash([]);
-      rc(bx,.13,.215,.155,.090,wg);   /* left bay */
-      rc(bx,.715,.215,.155,.090,wg);  /* right bay */
-      /* Entrance canopy + door */
-      pl(bx,[[.42,.31],[.42,.185],[.58,.185],[.58,.31]],wg);
-      bx.globalAlpha=.16*wg;bx.lineWidth=.7;
-      ln(bx,.40*W,.185*H,.60*W,.185*H,wg);  /* canopy soffit */
-      ln(bx,.40*W,.175*H,.60*W,.175*H,wg);  /* canopy top */
-      bx.globalAlpha=.20*wg;bx.lineWidth=.9;
-      ln(bx,.50*W,.185*H,.50*W,.31*H,wg);   /* door centre split */
-      /* Entrance steps */
-      bx.globalAlpha=.18*wg;bx.lineWidth=.7;
-      ln(bx,.40*W,.315*H,.60*W,.315*H,wg);
-      ln(bx,.39*W,.322*H,.61*W,.322*H,wg);
-    }
-
-    /* Elevation dimension line — total width */
-    var ed=ph(prog,.35,.58);
-    if(ed>0){
-      bx.globalAlpha=.22*ed;bx.lineWidth=.7;bx.setLineDash([]);
-      ln(bx,.11*W,.001*H,.89*W,.001*H,ed);
-      bx.globalAlpha=.22*ed;
-      if(ed>.25){arw(bx,.16*W,.001*H,.11*W,.001*H,4);}
-      if(ed>.60){arw(bx,.84*W,.001*H,.89*W,.001*H,4);}
-      /* Height tick marks on right */
-      bx.globalAlpha=.20*ed;
-      [[.022,.31],[.12,.31],[.21,.31],[.31,.31]].forEach(function(m,i){
-        ln(bx,.89*W,m[0]*H,.94*W,m[0]*H,ed);
-      });
-      ln(bx,.915*W,.022*H,.915*W,.31*H,ed);
-      if(ed>.30){arw(bx,.915*W,.05*H,.915*W,.022*H,3);}
-      if(ed>.70){arw(bx,.915*W,.29*H,.915*W,.31*H,3);}
-    }
-
-    /* Elevation text */
-    var et=ph(prog,.46,.70);
-    if(et>0){
-      var fsz=Math.round(H*.012);
-      [
-        [.935,.028,'FL +9.0','left'],
-        [.935,.125,'FL +6.0','left'],
-        [.935,.215,'FL +3.0','left'],
-        [.935,.305,'GL ±0.0','left'],
-      ].forEach(function(l){bx.globalAlpha=.34*et;bx.font=fsz+'px "Courier New",monospace';bx.fillStyle=SPC.G;bx.textAlign=l[3];bx.textBaseline='middle';bx.fillText(l[2],l[0]*W,l[1]*H);});
-      tx(bx,'36.0 M',.50,.014,fsz,.30*et);
-      bx.globalAlpha=.28*et;bx.textAlign='center';bx.font=Math.round(H*.011)+'px "Courier New",monospace';bx.fillText('FRONT ELEVATION — SCALE 1:100',.50*W,.338*H);
       bx.globalAlpha=1;
     }
 
-    /* ══════════════════════════════════════
-       LOGO ZONE CALLOUTS (y: .35-.58)
-       Blueprint elements flanking the TF logo
-    ══════════════════════════════════════ */
-    var lz=ph(prog,.32,.58);
-    if(lz>0){
-      /* Section cut dashed lines flanking logo */
-      bx.globalAlpha=.24*lz;bx.lineWidth=.9;bx.setLineDash([9,4]);
-      ln(bx,.03*W,.455*H,.22*W,.455*H,lz);
-      ln(bx,.78*W,.455*H,.97*W,.455*H,lz);
-      bx.setLineDash([]);
-
-      /* Section reference circles */
-      bx.globalAlpha=.34*lz;bx.lineWidth=1.0;
-      bx.beginPath();bx.arc(.055*W,.455*H,H*.016,0,Math.PI*2);bx.stroke();
-      bx.beginPath();bx.arc(.945*W,.455*H,H*.016,0,Math.PI*2);bx.stroke();
-      bx.globalAlpha=.30*lz;bx.font='bold '+(H*.011)+'px "Courier New",monospace';bx.textAlign='center';bx.textBaseline='middle';
-      bx.fillText('A',.055*W,.455*H);
-      bx.fillText('A',.945*W,.455*H);
-
-      /* Left info block */
-      bx.globalAlpha=.26*lz;bx.lineWidth=.8;
-      rc(bx,.022,.36,.178,.175,lz*.8);
-      bx.globalAlpha=.28*lz;bx.font=Math.round(H*.0095)+'px "Courier New",monospace';bx.textAlign='left';bx.textBaseline='middle';
-      [
-        [.035,.380,'PROJECT NO:'],
-        [.035,.398,'TF-ARQ-2026'],
-        [.035,.420,'─────────────'],
-        [.035,.438,'DRG: TF-001'],
-        [.035,.456,'REV: A'],
-        [.035,.474,'DATE: 2026'],
-        [.035,.492,'─────────────'],
-        [.035,.510,'SCALE 1:100'],
-      ].forEach(function(t){bx.fillText(t[2],t[0]*W,t[1]*H);});
-
-      /* Right info block */
-      bx.globalAlpha=.26*lz;bx.lineWidth=.8;
-      rc(bx,.800,.36,.178,.175,lz*.8);
-      bx.globalAlpha=.28*lz;bx.textAlign='left';
-      [
-        [.812,.380,'SPECIFICATION:'],
-        [.812,.398,'EXT: BRICK/GLASS'],
-        [.812,.420,'─────────────'],
-        [.812,.438,'STR: REINF. CONC'],
-        [.812,.456,'ROOF: SBS MEM.'],
-        [.812,.474,'INSUL: PIR 100mm'],
-        [.812,.492,'─────────────'],
-        [.812,.510,'BS EN 1991-1-1'],
-      ].forEach(function(t){bx.fillText(t[2],t[0]*W,t[1]*H);});
-      bx.globalAlpha=1;
-    }
-
-    /* ══════════════════════════════════════
-       FLOOR PLAN (bottom, y: 0.62-0.95)
-       Modern open-plan apartment/dwelling
-    ══════════════════════════════════════ */
-
-    /* Section plan title */
-    var fp0=ph(prog,.25,.42);
-    if(fp0>0){
-      bx.globalAlpha=.32*fp0;bx.lineWidth=1.1;bx.setLineDash([]);
-      ln(bx,.04*W,.60*H,.96*W,.60*H,fp0);
-      bx.globalAlpha=.28*fp0;bx.font='bold '+(H*.012)+'px "Courier New",monospace';bx.textAlign='center';bx.textBaseline='middle';
-      bx.fillText('GROUND FLOOR PLAN — SCALE 1:50',.50*W,.595*H);
-      bx.globalAlpha=1;
-    }
-
-    /* Outer walls (with door/window gaps) */
-    var fw=ph(prog,.22,.46);
-    if(fw>0){
-      bx.globalAlpha=.46*fw;bx.lineWidth=1.6;bx.setLineDash([]);
-      /* Top wall — gap for front door x:.44-.56 */
-      ln(bx,.04*W,.63*H,.44*W,.63*H,fw);
-      ln(bx,.56*W,.63*H,.96*W,.63*H,fw);
-      /* Bottom wall */
-      ln(bx,.04*W,.95*H,.96*W,.95*H,fw);
-      /* Left wall */
-      ln(bx,.04*W,.63*H,.04*W,.95*H,fw);
-      /* Right wall — gap for window y:.68-.77 */
-      ln(bx,.96*W,.63*H,.96*W,.68*H,fw);
-      ln(bx,.96*W,.77*H,.96*W,.95*H,fw);
-      /* Window symbols on top wall (double line = glazing) */
-      bx.globalAlpha=.34*fw;bx.lineWidth=.8;
-      /* Living room windows */
-      ln(bx,.09*W,.63*H,.18*W,.63*H,fw);ln(bx,.09*W,.623*H,.18*W,.623*H,fw);
-      ln(bx,.24*W,.63*H,.34*W,.63*H,fw);ln(bx,.24*W,.623*H,.34*W,.623*H,fw);
-      /* Kitchen windows */
-      ln(bx,.63*W,.63*H,.73*W,.63*H,fw);ln(bx,.63*W,.623*H,.73*W,.623*H,fw);
-      ln(bx,.79*W,.63*H,.88*W,.63*H,fw);ln(bx,.79*W,.623*H,.88*W,.623*H,fw);
-      /* Right side window */
-      ln(bx,.96*W,.682*H,.96*W,.768*H,fw);ln(bx,.967*W,.682*H,.967*W,.768*H,fw);
-      /* Bottom wall windows */
-      ln(bx,.08*W,.95*H,.20*W,.95*H,fw);ln(bx,.08*W,.957*H,.20*W,.957*H,fw);
-      ln(bx,.54*W,.95*H,.65*W,.95*H,fw);ln(bx,.54*W,.957*H,.65*W,.957*H,fw);
-    }
-
-    /* Interior walls */
-    var fiw=ph(prog,.34,.56);
-    if(fiw>0){
-      bx.globalAlpha=.38*fiw;bx.lineWidth=1.3;bx.setLineDash([]);
-      /* Centre vertical: gaps at y .695-.75 (kitchen door) */
-      ln(bx,.50*W,.63*H,.50*W,.695*H,fiw);
-      ln(bx,.50*W,.750*H,.50*W,.95*H,fiw);
-      /* Horizontal divider y=.79 — gaps for doors */
-      ln(bx,.04*W,.79*H,.20*W,.79*H,fiw);     /* left seg */
-      ln(bx,.27*W,.79*H,.45*W,.79*H,fiw);     /* mid-left seg */
-      ln(bx,.55*W,.79*H,.96*W,.79*H,fiw);     /* right half */
-      /* Bathroom partition x=.76 */
-      ln(bx,.76*W,.79*H,.76*W,.95*H,fiw);
-      /* Kitchen counter / worktop (L-shape) */
-      bx.globalAlpha=.14*fiw;bx.lineWidth=.7;
-      pl(bx,[[.52,.63],[.52,.695],[.94,.695]],fiw);
-      ln(bx,.52*W,.63*H,.94*W,.63*H,fiw*.4);  /* back wall */
-    }
-
-    /* Door arcs */
-    var fda=ph(prog,.40,.62);
-    if(fda>0){
-      bx.globalAlpha=.28*fda;bx.lineWidth=.9;
-      /* Front door — opens inward, arc left of gap */
-      bx.setLineDash([4,3]);
-      bx.beginPath();bx.arc(.56*W,.63*H,.12*W,Math.PI,Math.PI+Math.PI*.5,false);bx.stroke();
-      /* Door leaf */
-      bx.setLineDash([]);bx.globalAlpha=.22*fda;bx.lineWidth=.9;
-      ln(bx,.56*W,.63*H,.56*W,.63*H+.12*W,fda);
-      /* Internal doors */
-      bx.globalAlpha=.15*fda;bx.setLineDash([3,3]);bx.lineWidth=.7;
-      bx.beginPath();bx.arc(.20*W,.79*H,.07*H,0,Math.PI*.5);bx.stroke();
-      bx.beginPath();bx.arc(.55*W,.79*H,.07*H,Math.PI,Math.PI*.5,true);bx.stroke();
-      bx.beginPath();bx.arc(.50*W,.695*H,.055*W,Math.PI*.5,0,true);bx.stroke();
-      bx.beginPath();bx.arc(.76*W,.86*H,.065*H,Math.PI,Math.PI*.5,true);bx.stroke();
-      bx.setLineDash([]);
-    }
-
-    /* Furniture symbols (very subtle) */
-    var ff=ph(prog,.48,.72);
-    if(ff>0){
-      bx.globalAlpha=.16*ff;bx.lineWidth=.7;bx.setLineDash([]);
-      /* Sofa (L-shape) */
-      rc(bx,.07,.655,.175,.065,ff);rc(bx,.07,.655,.025,.065,ff);rc(bx,.22,.655,.025,.065,ff);
-      /* Dining table + chairs */
-      rc(bx,.28,.658,.14,.075,ff);
-      [[.31,.645],[.38,.645],[.31,.742],[.38,.742]].forEach(function(c){bx.beginPath();bx.arc(c[0]*W,c[1]*H,H*.013,0,Math.PI*2);bx.stroke();});
-      /* Bed 1 (master) */
-      rc(bx,.07,.815,.32,.11,ff);
-      bx.globalAlpha=.07*ff;ln(bx,.08*W,.825*H,.38*W,.825*H,ff);  /* pillow line */
-      /* Bed 2 */
-      bx.globalAlpha=.10*ff;rc(bx,.53,.815,.20,.11,ff);
-      bx.globalAlpha=.07*ff;ln(bx,.54*W,.825*H,.72*W,.825*H,ff);
-      /* Bathroom fixtures */
-      bx.globalAlpha=.10*ff;
-      rc(bx,.785,.810,.085,.070,ff);   /* bath */
-      bx.beginPath();bx.ellipse(.825*W,.896*H,.028*W,.038*H,0,0,Math.PI*2);bx.stroke(); /* WC */
-      /* Kitchen island */
-      bx.globalAlpha=.09*ff;rc(bx,.60,.715,.20,.045,ff);
-    }
-
-    /* Floor plan dimensions */
-    var fdim=ph(prog,.54,.78);
-    if(fdim>0){
-      bx.globalAlpha=.20*fdim;bx.lineWidth=.7;bx.setLineDash([]);
-      /* Total width bottom */
-      ln(bx,.04*W,.972*H,.96*W,.972*H,fdim);
-      if(fdim>.28){arw(bx,.09*W,.972*H,.04*W,.972*H,4);}
-      if(fdim>.65){arw(bx,.91*W,.972*H,.96*W,.972*H,4);}
-      /* Half widths */
-      bx.globalAlpha=.14*fdim;
-      ln(bx,.04*W,.964*H,.50*W,.964*H,fdim);
-      ln(bx,.50*W,.964*H,.96*W,.964*H,fdim);
-      /* Height right */
-      bx.globalAlpha=.20*fdim;
-      ln(bx,.978*W,.63*H,.978*W,.95*H,fdim);
-      if(fdim>.35){arw(bx,.978*W,.66*H,.978*W,.63*H,4);}
-      if(fdim>.72){arw(bx,.978*W,.92*H,.978*W,.95*H,4);}
-    }
-
-    /* Floor plan text labels */
-    var ftx=ph(prog,.58,.82);
-    if(ftx>0){
-      var fs=Math.round(H*.011);
-      bx.font=fs+'px "Courier New",monospace';bx.fillStyle=SPC.G;bx.textAlign='center';bx.textBaseline='middle';
-      [
-        [.270,.710,'LIVING ROOM',.16],
-        [.730,.710,'KITCHEN / DINING',.16],
-        [.265,.872,'MASTER BEDROOM',.16],
-        [.625,.872,'BEDROOM 2',.16],
-        [.855,.872,'BATHROOM',.16],
-        [.500,.984,'18.0 M',.22],
-        [.988,.790,'9.0 M',.22],
-      ].forEach(function(t){bx.globalAlpha=t[3]*1.5*ftx;bx.fillText(t[2],t[0]*W,t[1]*H);});
-      bx.globalAlpha=.24*ftx;bx.font=Math.round(H*.009)+'px "Courier New",monospace';
-      [[.270,.733,'(6.8 × 4.2 M)'],[.730,.733,'(9.2 × 4.2 M)'],[.265,.893,'(6.8 × 4.8 M)'],[.625,.893,'(4.8 × 4.8 M)'],[.855,.893,'(3.6 × 4.8 M)']].forEach(function(t){bx.fillText(t[2],t[0]*W,t[1]*H);});
-      bx.globalAlpha=1;
-    }
-
-    /* North arrow + scale bar */
-    var fsym=ph(prog,.64,.86);
-    if(fsym>0){
-      /* North arrow */
-      var nx=.87*W,ny=.688*H,nr=H*.024;
-      bx.globalAlpha=.34*fsym;bx.lineWidth=1.0;bx.setLineDash([]);
-      /* N letter */
-      bx.font='bold '+(H*.013)+'px "Courier New",monospace';bx.textAlign='center';bx.textBaseline='middle';
-      bx.fillText('N',nx,ny-nr*1.7);
-      /* Arrow body */
-      bx.beginPath();bx.moveTo(nx,ny-nr);bx.lineTo(nx+nr*.38,ny+nr*.35);bx.lineTo(nx,ny);bx.closePath();
-      bx.fillStyle=SPC.G;bx.globalAlpha=.22*fsym;bx.fill();
-      bx.beginPath();bx.moveTo(nx,ny-nr);bx.lineTo(nx-nr*.38,ny+nr*.35);bx.lineTo(nx,ny);bx.closePath();
-      bx.globalAlpha=.08*fsym;bx.fill();
-      /* Scale bar */
-      var sbx=.055*W,sby=.968*H,sbw=W*.08;
-      bx.globalAlpha=.20*fsym;bx.lineWidth=.7;bx.fillStyle=SPC.G;bx.strokeStyle=SPC.G;
-      for(var si=0;si<4;si++){
-        bx.globalAlpha=(si%2===0?.20:.09)*fsym;
-        bx.fillRect(sbx+si*sbw/4,sby,sbw/4,H*.006);
+    /* ── WINDOW DIVISIONS ── */
+    var pWD=ph(prog,.18,.42);
+    if(pWD>0){
+      bx.lineWidth=.75;bx.setLineDash([]);
+      for(var wi=1;wi<4;wi++){
+        var tww=tL*wi/4;
+        floors.forEach(function(fy,fi){
+          if(fi>=floors.length-1)return;
+          var fy2=floors[fi+1];
+          var p1=Lv(BX,fy,tww),p2=Lv(BX,fy2,tww),pad=(p1.y-p2.y)*.10;
+          bx.globalAlpha=.24*pWD;ln(bx,p1.x,p1.y-pad,p2.x,p2.y+pad,pWD);
+        });
       }
-      bx.globalAlpha=.18*fsym;bx.font=Math.round(H*.009)+'px "Courier New",monospace';bx.textAlign='center';bx.fillText('0   2   4 M',sbx+sbw/2,sby+H*.012);
+      for(var wi=1;wi<3;wi++){
+        var tww=tR*wi/3;
+        floors.forEach(function(fy,fi){
+          if(fi>=floors.length-1)return;
+          var fy2=floors[fi+1];
+          var p1=Rv(BX,fy,tww),p2=Rv(BX,fy2,tww),pad=(p1.y-p2.y)*.10;
+          bx.globalAlpha=.16*pWD;ln(bx,p1.x,p1.y-pad,p2.x,p2.y+pad,pWD);
+        });
+      }
       bx.globalAlpha=1;
     }
 
-    /* Title block (bottom right) */
-    var tb=ph(prog,.68,.92);
-    if(tb>0){
-      bx.globalAlpha=.26*tb;bx.lineWidth=.9;bx.strokeStyle=SPC.G;bx.setLineDash([]);
-      rc(bx,.59,.960,.385,.032,tb);
-      bx.globalAlpha=.20*tb;bx.fillStyle=SPC.G;bx.textAlign='left';
-      bx.font=Math.round(H*.0095)+'px "Courier New",monospace';bx.textBaseline='middle';
-      [[.604,.966,'TRADESFLOW PRO  •  ARCHITECTURAL SERIES'],[.604,.976,'DWG: TF-ARQ-2026-001   REV: A   SCALE 1:50']].forEach(function(t){bx.fillText(t[2],t[0]*W,t[1]*H);});
+    /* ── STRUCTURAL COLUMNS (dashed) ── */
+    var pSCol=ph(prog,.16,.36);
+    if(pSCol>0){
+      bx.globalAlpha=.14*pSCol;bx.lineWidth=.6;bx.setLineDash([5,4]);
+      for(var ci=1;ci<4;ci++){
+        var tw2=tL*ci/4;
+        var ct=Lv(BX,ROOF,tw2),cb=Lv(BX,GROUND,tw2);
+        ln(bx,ct.x,ct.y,cb.x,cb.y,pSCol);
+      }
+      bx.setLineDash([]);bx.globalAlpha=1;
+    }
+
+    /* ── SCAFFOLDING ── */
+    var pSC=ph(prog,.10,.28);
+    if(pSC>0){
+      var off=W*.034;
+      bx.lineWidth=.8;bx.setLineDash([]);
+      bx.globalAlpha=.22*pSC;
+      [BX-off,BX-off*2,BX-off*3].forEach(function(sx){ln(bx,sx,GROUND,sx,ROOF-H*.02,pSC);});
+      floors.forEach(function(fy){ln(bx,BX-off,fy,BX-off*3,fy,pSC);});
+      bx.globalAlpha=.12*pSC;bx.setLineDash([6,3]);
+      for(var si=0;si<floors.length-1;si++){
+        ln(bx,BX-off,floors[si],BX-off*2,floors[si+1],pSC);
+        ln(bx,BX-off*2,floors[si],BX-off,floors[si+1],pSC);
+      }
+      bx.setLineDash([]);bx.globalAlpha=1;
+    }
+
+    /* ── DIMENSIONS ── */
+    var pDIM=ph(prog,.28,.54);
+    if(pDIM>0){
+      var dfs=Math.round(H*.010);
+      bx.font=dfs+'px "Courier New",monospace';bx.fillStyle=SPC.G;bx.lineWidth=.7;
+      var dRX=RBb.x+W*.055;
+      bx.globalAlpha=.30*pDIM;
+      ln(bx,dRX,ROOF,dRX,GROUND,pDIM);
+      if(pDIM>.3)arw(bx,dRX,ROOF+H*.025,dRX,ROOF,4);
+      if(pDIM>.7)arw(bx,dRX,GROUND-H*.025,dRX,GROUND,4);
+      bx.globalAlpha=.34*pDIM;bx.textAlign='left';bx.textBaseline='middle';
+      bx.fillText('8.40 M',dRX+W*.012,(ROOF+GROUND)/2);
+      var dBY=GROUND+H*.036;
+      bx.globalAlpha=.26*pDIM;
+      ln(bx,BX,dBY,LBb.x,dBY,pDIM);
+      if(pDIM>.4)arw(bx,BX-W*.02,dBY,BX,dBY,4);
+      if(pDIM>.8)arw(bx,LBb.x+W*.02,dBY,LBb.x,dBY,4);
+      bx.textAlign='center';bx.textBaseline='top';bx.fillText('4.90',(BX+LBb.x)/2,dBY+H*.004);
+      var dBY2=GROUND+H*.058;
+      bx.globalAlpha=.22*pDIM;
+      ln(bx,BX,dBY2,RBb.x,dBY2,pDIM);
+      if(pDIM>.5)arw(bx,BX+W*.02,dBY2,BX,dBY2,4);
+      if(pDIM>.9)arw(bx,RBb.x-W*.02,dBY2,RBb.x,dBY2,4);
+      bx.textAlign='center';bx.textBaseline='top';bx.fillText('5.20',(BX+RBb.x)/2,dBY2+H*.004);
+      bx.globalAlpha=.20*pDIM;
+      floors.forEach(function(fy,i){
+        if(i===0)return;
+        ln(bx,RBb.x+W*.01,fy,RBb.x+W*.04,fy,pDIM);
+        var fl=['','3.00','3.00','3.00'];
+        if(fl[i]){bx.textAlign='left';bx.textBaseline='middle';bx.fillText(fl[i],RBb.x+W*.048,fy);}
+      });
+      bx.globalAlpha=1;
+    }
+
+    /* ── TECHNICAL TEXT ── */
+    var pTX=ph(prog,.36,.64);
+    if(pTX>0){
+      var tfs=Math.round(H*.009);
+      bx.font=tfs+'px "Courier New",monospace';bx.fillStyle=SPC.G;
+      bx.globalAlpha=.28*pTX;
+      var fLbls=['GL 0.00','FL +3.00','FL +6.00','FL +9.00','ROOF'];
+      floors.forEach(function(fy,i){
+        bx.textAlign='right';bx.textBaseline='middle';
+        bx.fillText(fLbls[i]||'',BX-W*.006,fy);
+      });
+      bx.globalAlpha=.12*pTX;bx.lineWidth=.5;bx.setLineDash([15,8]);
+      ln(bx,0,HL,W,HL,pTX);
+      bx.setLineDash([]);
+      bx.globalAlpha=.15*pTX;bx.textAlign='left';bx.textBaseline='top';
+      bx.fillText('HORIZON',W*.02,HL+H*.005);
+      bx.globalAlpha=.22*pTX;bx.textAlign='center';bx.textBaseline='top';
+      bx.font='bold '+tfs+'px "Courier New",monospace';
+      bx.fillText('COMMERCIAL ELEVATION  —  SCALE 1:100',W*.44,GROUND+H*.07);
+      bx.globalAlpha=1;
+    }
+
+    /* ── BLUEPRINT ROLL ── */
+    var pBR=ph(prog,.52,.80);
+    if(pBR>0){
+      bx.globalAlpha=.22*pBR;bx.lineWidth=.9;bx.setLineDash([]);
+      var brx=W*.09,bry=H*.875,brl=W*.16,brh=H*.022;
+      bx.beginPath();bx.ellipse(brx,bry,brh,brh,0,0,Math.PI*2);bx.stroke();
+      bx.beginPath();bx.ellipse(brx+brl,bry,brh,brh,0,0,Math.PI*2);bx.stroke();
+      bx.beginPath();bx.moveTo(brx,bry-brh);bx.lineTo(brx+brl,bry-brh);
+      bx.moveTo(brx,bry+brh);bx.lineTo(brx+brl,bry+brh);bx.stroke();
+      bx.globalAlpha=.10*pBR;
+      for(var li=1;li<5;li++)ln(bx,brx+brl*li/5,bry-brh*.8,brx+brl*li/5,bry+brh*.8,pBR);
+      bx.globalAlpha=.18*pBR;bx.font=Math.round(H*.008)+'px "Courier New",monospace';
+      bx.textAlign='center';bx.textBaseline='top';bx.fillText('PLAN SET',brx+brl/2,bry+brh+H*.006);
+      bx.globalAlpha=1;
+    }
+
+    /* ── SCALE RULER ── */
+    var pRuler=ph(prog,.58,.84);
+    if(pRuler>0){
+      bx.globalAlpha=.22*pRuler;bx.lineWidth=.8;bx.setLineDash([]);
+      var rux=W*.66,ruy=H*.875,rul=W*.24;
+      ln(bx,rux,ruy,rux+rul,ruy,pRuler);
+      ln(bx,rux,ruy-H*.005,rux,ruy+H*.005,pRuler);
+      ln(bx,rux+rul,ruy-H*.005,rux+rul,ruy+H*.005,pRuler);
+      bx.globalAlpha=.14*pRuler;
+      for(var ri=1;ri<10;ri++){var rx2=rux+rul*ri/10;var rth=ri%5===0?H*.010:H*.005;ln(bx,rx2,ruy-rth,rx2,ruy+rth,pRuler);}
+      bx.globalAlpha=.20*pRuler;bx.font=Math.round(H*.008)+'px "Courier New",monospace';
+      bx.textAlign='center';bx.textBaseline='bottom';bx.fillText('0    5    10 M',rux+rul/2,ruy-H*.008);
       bx.globalAlpha=1;
     }
 
