@@ -83,14 +83,24 @@ Deno.serve(async (req) => {
       }
 
       if (action === 'send_otp') {
-        const { count, error: countError } = await supabase
+        const windowStart = new Date(Date.now() - 15 * 60 * 1000).toISOString()
+        const { data: recentSends, error: countError } = await supabase
           .from('otp_tokens')
-          .select('*', { count: 'exact', head: true })
+          .select('created_at')
           .eq('share_token', shareToken)
-          .gte('created_at', new Date(Date.now() - 10 * 60 * 1000).toISOString())
+          .gte('created_at', windowStart)
+          .order('created_at', { ascending: false })
 
         if (countError) return json({ success: false, error: 'Could not start verification. Please try again.' }, 500)
-        if ((count || 0) >= 3) return json({ success: false, error: 'Too many attempts. Please try again in 10 minutes.' }, 429)
+        const sendCount = recentSends?.length || 0
+        if (sendCount >= 3) return json({ success: false, error: 'Too many codes sent. Please try again in 15 minutes.', retry_after_seconds: 900 }, 429)
+
+        const lastSentAt = recentSends?.[0]?.created_at ? new Date(recentSends[0].created_at).getTime() : 0
+        const elapsedMs = Date.now() - lastSentAt
+        if (lastSentAt && elapsedMs < 10_000) {
+          const retryAfter = Math.max(1, Math.ceil((10_000 - elapsedMs) / 1000))
+          return json({ success: false, error: `Please wait ${retryAfter} seconds before requesting another code.`, retry_after_seconds: retryAfter }, 429)
+        }
 
         // A newly issued code supersedes every older unused code for this document.
         await supabase
@@ -151,7 +161,12 @@ Deno.serve(async (req) => {
           return json({ success: false, error: 'Failed to send email' }, 500)
         }
 
-        return json({ success: true })
+        const sendNumber = sendCount + 1
+        return json({
+          success: true,
+          resend_available_in: sendNumber < 3 ? 10 : 900,
+          sends_remaining: Math.max(0, 3 - sendNumber),
+        })
       }
 
       const code = String(body?.code || '').replace(/\s/g, '')

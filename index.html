@@ -8685,6 +8685,8 @@ async function checkViewerMode(){
 }
 
 function renderClientViewer(doc){
+  if(_otpResendTimer) clearInterval(_otpResendTimer);
+  _otpResendTimer=null;_otpResendRemaining=0;
   _otpVerified=false;_otpVerificationToken='';_otpPendingAction='accept';_otpSending=false;
   const root=document.getElementById('viewer-root');
   const isInv=doc.type==='invoice';
@@ -8823,7 +8825,7 @@ function renderClientViewer(doc){
               <button class="vw-sig-submit" id="vw-verify-otp-btn" onclick="vwVerifyOtp()">Verify</button>
             </div>
             <div style="text-align:center;margin-top:12px">
-              <button onclick="vwResendOtp()" style="background:none;border:none;color:var(--brand);font-size:13px;cursor:pointer;text-decoration:underline;padding:0">Resend code</button>
+              <button id="vw-resend-otp-btn" onclick="vwResendOtp()" style="background:none;border:none;color:var(--brand);font-size:13px;cursor:pointer;text-decoration:underline;padding:0">Resend code</button>
             </div>
           </div>
         </div>
@@ -9005,6 +9007,8 @@ let _otpVerified=false;
 let _otpVerificationToken='';
 let _otpPendingAction='accept';
 let _otpSending=false;
+let _otpResendTimer=null;
+let _otpResendRemaining=0;
 
 function vwStartAccept(){
   vwStartVerifiedAction('accept');
@@ -9038,11 +9042,13 @@ async function vwSendOtp(){
     const{data,error}=await sb.functions.invoke('send-otp',{body:{action:'send_otp',share_token:_viewerDoc?.shareToken}});
     if(error||!data?.success){
       if(errEl){errEl.textContent=data?.error||'Failed to send code. Please try again.';errEl.style.display='block';}
+      if(data?.retry_after_seconds) vwStartResendCooldown(Number(data.retry_after_seconds));
       return;
     }
     const sentMsg=document.getElementById('vw-otp-sent-msg');
     if(sentMsg) sentMsg.textContent='A one-time verification code has been sent to your email. Enter it below to continue.';
     vwShowSection('otp-verify');
+    vwStartResendCooldown(Number(data?.resend_available_in)||10);
     document.getElementById('vw-otp-code-input')?.focus();
   }catch(e){
     if(errEl){errEl.textContent='Network error. Please try again.';errEl.style.display='block';}
@@ -9092,10 +9098,35 @@ async function vwVerifyOtp(){
 }
 
 async function vwResendOtp(){
+  if(_otpSending||_otpResendRemaining>0) return;
   const codeInput=document.getElementById('vw-otp-code-input');
   if(codeInput) codeInput.value='';
   vwShowSection('email-verify');
   await vwSendOtp();
+}
+
+function vwStartResendCooldown(seconds){
+  if(_otpResendTimer) clearInterval(_otpResendTimer);
+  _otpResendRemaining=Math.max(0,Math.floor(Number(seconds)||0));
+  const update=()=>{
+    const btn=document.getElementById('vw-resend-otp-btn');
+    if(!btn) return;
+    if(_otpResendRemaining<=0){
+      btn.disabled=false;
+      btn.textContent='Resend code';
+      btn.style.opacity='1';
+      if(_otpResendTimer){clearInterval(_otpResendTimer);_otpResendTimer=null;}
+      return;
+    }
+    btn.disabled=true;
+    const mins=Math.floor(_otpResendRemaining/60);
+    const secs=_otpResendRemaining%60;
+    btn.textContent=mins>0?'Resend available in '+mins+':'+String(secs).padStart(2,'0'):'Resend code in '+_otpResendRemaining+'s';
+    btn.style.opacity='.6';
+    _otpResendRemaining--;
+  };
+  update();
+  if(_otpResendRemaining>0) _otpResendTimer=setInterval(update,1000);
 }
 
 function vwCancelVerification(){
