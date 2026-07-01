@@ -8797,8 +8797,8 @@ function renderClientViewer(doc){
         ${!doc.signedAt&&!doc.declinedAt&&!isConvertedInv&&doc.status!=='Converted'?`
         <div id="vw-email-verify-panel" class="vw-sub-panel">
           <div class="vw-agreement">
-            <div class="vw-agreement-title">Verify Your Identity</div>
-            <div class="vw-agreement-text" id="vw-otp-purpose">To protect your security and prevent unauthorised signatures, we'll send a one-time verification code to the email address associated with this document.</div>
+            <div class="vw-agreement-title">Sending Verification Code</div>
+            <div class="vw-agreement-text" id="vw-otp-purpose">Please wait while we send a one-time code to the email address associated with this document.</div>
           </div>
           <div class="vw-sig-wrap">
             <div id="vw-otp-email-error" style="display:none;color:#dc2626;font-size:13px;margin:6px 0 0"></div>
@@ -8810,8 +8810,8 @@ function renderClientViewer(doc){
         </div>
         <div id="vw-otp-verify-panel" class="vw-sub-panel">
           <div class="vw-agreement">
-            <div class="vw-agreement-title">Enter Verification Code</div>
-            <div class="vw-agreement-text" id="vw-otp-sent-msg">We sent a 6-digit code to your email.</div>
+            <div class="vw-agreement-title">Verification Code Sent</div>
+            <div class="vw-agreement-text" id="vw-otp-sent-msg">A one-time verification code has been sent to your email. Enter it below to continue.</div>
             <div style="margin-top:8px;font-size:12px;color:var(--text-muted,#888);display:flex;align-items:flex-start;gap:5px"><span style="font-size:14px">📬</span><span>Can't see it? Please check your <strong>spam or junk folder</strong> — it may have been filtered.</span></div>
           </div>
           <div class="vw-sig-wrap">
@@ -9014,6 +9014,7 @@ function vwBeginVerification(){
   const gate=document.getElementById('vw-identity-gate');
   if(gate) gate.style.display='none';
   vwShowSection('email-verify');
+  vwSendOtp();
 }
 
 function vwStartVerifiedAction(action){
@@ -9040,7 +9041,7 @@ async function vwSendOtp(){
       return;
     }
     const sentMsg=document.getElementById('vw-otp-sent-msg');
-    if(sentMsg) sentMsg.textContent='We sent a 6-digit code to the email address on this document.';
+    if(sentMsg) sentMsg.textContent='A one-time verification code has been sent to your email. Enter it below to continue.';
     vwShowSection('otp-verify');
     document.getElementById('vw-otp-code-input')?.focus();
   }catch(e){
