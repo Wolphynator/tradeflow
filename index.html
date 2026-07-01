@@ -9029,6 +9029,14 @@ function vwStartVerifiedAction(action){
   vwShowSection('email-verify');
 }
 
+async function vwFunctionErrorData(data,error){
+  if(data&&typeof data==='object') return data;
+  try{
+    if(error?.context?.json) return await error.context.json();
+  }catch(e){}
+  return null;
+}
+
 async function vwSendOtp(){
   if(_otpSending) return;
   const errEl=document.getElementById('vw-otp-email-error');
@@ -9041,8 +9049,9 @@ async function vwSendOtp(){
   try{
     const{data,error}=await sb.functions.invoke('send-otp',{body:{action:'send_otp',share_token:_viewerDoc?.shareToken}});
     if(error||!data?.success){
-      if(errEl){errEl.textContent=data?.error||'Failed to send code. Please try again.';errEl.style.display='block';}
-      if(data?.retry_after_seconds) vwStartResendCooldown(Number(data.retry_after_seconds));
+      const failure=await vwFunctionErrorData(data,error);
+      if(errEl){errEl.textContent=failure?.error||'Failed to send code. Please try again.';errEl.style.display='block';}
+      if(failure?.retry_after_seconds) vwStartResendCooldown(Number(failure.retry_after_seconds));
       return;
     }
     const sentMsg=document.getElementById('vw-otp-sent-msg');
@@ -9075,7 +9084,8 @@ async function vwVerifyOtp(){
   try{
     const{data,error}=await sb.functions.invoke('send-otp',{body:{action:'verify_otp',code,share_token:_viewerDoc?.shareToken}});
     if(error||!data?.success){
-      if(errEl){errEl.textContent=data?.error||'Invalid or expired code. Please try again.';errEl.style.display='block';}
+      const failure=await vwFunctionErrorData(data,error);
+      if(errEl){errEl.textContent=failure?.error||'Invalid or expired code. Please try again.';errEl.style.display='block';}
       if(btn){btn.disabled=false;btn.textContent='Verify';}
       return;
     }
