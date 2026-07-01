@@ -8785,7 +8785,7 @@ function renderClientViewer(doc){
                     : `<div id="vw-identity-gate" style="margin:16px">
                         <div class="vw-agreement" style="margin:0 0 12px">
                           <div class="vw-agreement-title">Verify Your Identity</div>
-                          <div class="vw-agreement-text">For your security, we'll send a one-time verification code to the email address this document was sent to before you can continue.</div>
+                          <div class="vw-agreement-text">To protect your security and prevent unauthorised signatures, we'll send a one-time verification code to the email address associated with this document.</div>
                         </div>
                         <button class="vw-sig-submit" style="width:100%" onclick="vwShowSection('email-verify')">Verify Identity</button>
                       </div>
@@ -8798,7 +8798,7 @@ function renderClientViewer(doc){
         <div id="vw-email-verify-panel" class="vw-sub-panel">
           <div class="vw-agreement">
             <div class="vw-agreement-title">Verify Your Identity</div>
-            <div class="vw-agreement-text" id="vw-otp-purpose">For your security, we'll send a one-time verification code to the email address this document was sent to before you can continue.</div>
+            <div class="vw-agreement-text" id="vw-otp-purpose">To protect your security and prevent unauthorised signatures, we'll send a one-time verification code to the email address associated with this document.</div>
           </div>
           <div class="vw-sig-wrap">
             <div id="vw-otp-email-error" style="display:none;color:#dc2626;font-size:13px;margin:6px 0 0"></div>
@@ -9014,7 +9014,7 @@ function vwStartVerifiedAction(action){
   _otpPendingAction=action||'accept';
   if(_otpVerified&&_otpVerificationToken){vwShowSection(_otpPendingAction);return;}
   const purpose=document.getElementById('vw-otp-purpose');
-  if(purpose) purpose.textContent="For your security, we'll send a one-time verification code to the email address this document was sent to before you can continue.";
+  if(purpose) purpose.textContent="To protect your security and prevent unauthorised signatures, we'll send a one-time verification code to the email address associated with this document.";
   vwShowSection('email-verify');
 }
 
