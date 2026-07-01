@@ -7153,6 +7153,7 @@ async function saveNewEstimate(){
     client_id:newEstimate.client?.id||null,
     number,status,
     client_name:newEstimate.client?.name||'Client',
+    client_email:newEstimate.client?.email||null,
     client_address:newEstimate.client?clientAddressHTML(newEstimate.client)||'':'',
     from_name:currentBusiness?.trading_name||currentBusiness?.name||'TradeFlow',
     from_address:fromAddrParts.join('\n'),
