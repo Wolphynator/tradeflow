@@ -18,6 +18,9 @@ Obsidian Vault/
 .DS_Store
 Thumbs.db
 
+# Supabase CLI temp files
+supabase/.temp/
+
 # Node (if ever added)
 node_modules/
 
