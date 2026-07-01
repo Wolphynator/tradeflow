@@ -8787,7 +8787,7 @@ function renderClientViewer(doc){
                           <div class="vw-agreement-title">Verify Your Identity</div>
                           <div class="vw-agreement-text">To protect your security and prevent unauthorised signatures, we'll send a one-time verification code to the email address associated with this document.</div>
                         </div>
-                        <button class="vw-sig-submit" style="width:100%" onclick="vwShowSection('email-verify')">Verify Identity</button>
+                        <button class="vw-sig-submit" style="width:100%" onclick="vwBeginVerification()">Verify Identity</button>
                       </div>
                       <div class="vw-resp-btns" id="vw-verified-actions" style="display:none">${isInv
                         ? `<button class="vw-resp-accept" onclick="vwShowSection('accept')">&#10003; Sign &amp; Accept</button><button class="vw-resp-query" onclick="vwShowSection('query')">? Query</button>`
@@ -9010,6 +9010,12 @@ function vwStartAccept(){
   vwStartVerifiedAction('accept');
 }
 
+function vwBeginVerification(){
+  const gate=document.getElementById('vw-identity-gate');
+  if(gate) gate.style.display='none';
+  vwShowSection('email-verify');
+}
+
 function vwStartVerifiedAction(action){
   _otpPendingAction=action||'accept';
   if(_otpVerified&&_otpVerificationToken){vwShowSection(_otpPendingAction);return;}
@@ -9095,6 +9101,8 @@ function vwCancelVerification(){
   if(_otpSending) return;
   const codeInput=document.getElementById('vw-otp-code-input');
   if(codeInput) codeInput.value='';
+  const gate=document.getElementById('vw-identity-gate');
+  if(gate&&!_otpVerified) gate.style.display='block';
   vwShowSection(null);
 }
 
