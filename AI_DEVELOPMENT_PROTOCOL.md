@@ -1,9 +1,16 @@
-# TradeFlow Pro — AI Development Protocol
+# Tradesflowpro — AI Development Protocol
+
+| | |
+|---|---|
+| **Status** | Active |
+| **Owner** | Project Owner |
+| **Last Updated** | 2026-07-01 |
+| **Purpose** | Repository execution companion. Covers coordination, file ownership, Git workflow, and checklists. |
 
 This is the repository execution companion to the approved Obsidian master:
 `Obsidian Vault/Projects/Invoice Maker/AI_DEVELOPMENT_PRINCIPLES.md`.
 
-Every AI assistant working on TradeFlow Pro must read `PROJECT_CONTEXT.md`, then the master AI principles, then this protocol before coding. This file preserves operational rules for coordination, file ownership, Git workflow, security gates, and completion checks. It must not become a competing master rulebook.
+Every AI assistant working on Tradesflowpro must read `PROJECT_CONTEXT.md`, then the master AI principles, then this protocol before coding. This file preserves operational rules for coordination, file ownership, Git workflow, security gates, and completion checks. It must not become a competing master rulebook.
 
 ## 1. General AI rules
 
@@ -129,9 +136,9 @@ Use extra care around:
 
 Never weaken validation, remove security checks, expose secrets, or bypass access controls. Read `Obsidian Vault/Projects/Invoice Maker/SECURITY_FORM_RULES.md` before touching any form, input, public-facing field, or related data flow.
 
-## 12. TradeFlow business rules
+## 12. Tradesflowpro business rules
 
-TradeFlow manages legally important business documents and sensitive customer information. Changes involving the following areas require extra care:
+Tradesflowpro manages legally important business documents and sensitive customer information. Changes involving the following areas require extra care:
 
 - Invoices
 - Estimates
@@ -155,7 +162,7 @@ Database changes also require explicit testing recommendations and must preserve
 
 ## 14. Documentation-first feature gate
 
-Obsidian is the master blueprint for TradeFlow Pro. Before implementing any major feature, read and follow `Obsidian Vault/Projects/Invoice Maker/FEATURE_DESIGN_STANDARD.md`.
+Obsidian is the master blueprint for Tradesflowpro. Before implementing any major feature, read and follow `Obsidian Vault/Projects/Invoice Maker/FEATURE_DESIGN_STANDARD.md`.
 
 Major features include payments, multi-user/workspaces, inventory, AI, scheduling, authentication, invoice or estimate lifecycle changes, signatures, public links, notifications, reporting, integrations, subscriptions, and major data migrations.
 
@@ -203,7 +210,7 @@ After making changes, provide:
 - Tests performed and further testing recommendations
 - Possible side effects or remaining risks
 
-Also complete all documentation and version updates required by `AGENTS.md`.
+Also complete all documentation and version updates listed in `CLAUDE.md` (After every code change section).
 
 ## 17. Completion checklist
 
@@ -220,7 +227,7 @@ If an item does not apply or cannot be verified in the current environment, stat
 
 ## 18. Long-term goal
 
-TradeFlow Pro is intended to become a premium SaaS app for builders, cleaners, and tradespeople.
+Tradesflowpro is intended to become a premium SaaS app for builders, cleaners, and tradespeople.
 
 Every change should support:
 

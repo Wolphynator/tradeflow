@@ -1,47 +1,73 @@
-# TradeFlow — Claude Instructions
+# Tradesflowpro — Claude Session Bootstrap
 
-## Read this first
-Before any coding or file changes:
-1. Read `Obsidian Vault/Projects/Invoice Maker/PROJECT_CONTEXT.md`.
-2. Read `Obsidian Vault/Projects/Invoice Maker/AI_DEVELOPMENT_PRINCIPLES.md` — the master AI instruction document.
-3. Read and follow the root-level `AI_DEVELOPMENT_PROTOCOL.md` for task coordination, conflict prevention, Git workflow, and execution checklists.
-Also check `TRADEFLOW_RULEBOOK.md` for project rules, but only apply approved sections.
+| | |
+|---|---|
+| **Status** | Active |
+| **Owner** | Project Owner |
+| **Last Updated** | 2026-07-01 |
+| **Purpose** | Session entry point. Points to authoritative governance documents. Does not duplicate them. |
 
-## What this project is
-Mobile invoicing PWA for UK tradespeople. Single file: `index.html` (~8,000+ lines, vanilla JS, no framework).
-Stack: Supabase (auth + DB + Edge Functions), Cloudflare Pages, Resend (email).
+---
 
 ## Read at session start
-1. `Obsidian Vault/Projects/Invoice Maker/PROJECT_CONTEXT.md` — full architecture reference
-2. `Obsidian Vault/Projects/Invoice Maker/AI_DEVELOPMENT_PRINCIPLES.md` — master AI and engineering rules
-3. `Obsidian Vault/Projects/Invoice Maker/HANDOFF.md` — current status, version, what's pending
 
-## Before touching any form, input, or public-facing field
-**Read `Obsidian Vault/Projects/Invoice Maker/SECURITY_FORM_RULES.md` first.**
-This covers: email validation, password fields, date handling, XSS protection, input limits, RLS, email sending, and the public share link viewer.
+In this order, before any coding or file changes:
 
-## Permanent rules
+1. `Obsidian Vault/Projects/Invoice Maker/PROJECT_CONTEXT.md` — current architecture, stack, version
+2. `Obsidian Vault/Projects/Invoice Maker/AI_DEVELOPMENT_PRINCIPLES.md` — master AI instruction document, authority hierarchy, all engineering rules
+3. `Obsidian Vault/Projects/Invoice Maker/HANDOFF.md` — current version, deployment state, what is pending
 
-**VAT is always configurable — never hardcode it.**
-If any task tries to lock VAT to a fixed percentage, STOP and flag it in CAPITALS before doing anything.
+---
 
-**UK-first defaults:** GBP, £, en-GB locale, 20% VAT default (configurable).
+## Read before specific work
 
-**No automatic estimate→invoice conversion.** The tradesperson always triggers it manually.
+| Situation | Read first |
+|---|---|
+| Any form, input, email, auth, public link, RLS, OTP | `SECURITY_FORM_RULES.md` |
+| Any major feature (payments, AI, scheduling, etc.) | `FEATURE_DESIGN_STANDARD.md` |
+| Any cross-product or platform architectural decision | `PLATFORM_VISION.md` |
 
-**Never commit API keys, tokens, or secrets to `index.html` or any browser file.** All secrets live in Supabase Edge Function environment variables only.
+---
+
+## Non-negotiable rules
+
+**Brand:** Always **Tradesflowpro**. Never TradeFlow, TradeFlow Pro, or any variation.
+
+**VAT:** Always user-configurable. Never hardcode a percentage. If a task tries to lock VAT, stop and flag it.
+
+**Secrets:** Never commit API keys, tokens, or secrets to `index.html` or any browser file. All secrets live in Supabase Edge Function environment variables only.
+
+**Estimates:** The tradesperson always triggers estimate→invoice conversion manually. Never automate it.
+
+**UK defaults:** GBP, £, en-GB locale, 20% VAT default.
+
+---
+
+## What this project is
+
+Mobile invoicing PWA for UK tradespeople.
+Single file: `index.html` (vanilla JS, no framework).
+Stack: Supabase (auth + DB + Edge Functions), Cloudflare Pages, Resend (email).
+GitHub → Cloudflare Pages auto-deploy to tradesflowpro.com.
+
+---
+
+## Key helpers — do not reinvent
+
+- `esc(value)` — XSS-safe HTML escaping. Required on every `innerHTML` write with user data.
+- `cleanInputValue(id, kind)` — sanitise + enforce length limits.
+- `INPUT_LIMITS` — all max lengths. Never hardcode lengths elsewhere.
+- `validateEmail(email)` — structural + typo domain check.
+- `gbToISO(dateStr)` — converts `dd/mm/yyyy` → `yyyy-mm-dd` for Supabase.
+- `money(n)` / `moneyShort(n)` — always use for currency display.
+
+---
 
 ## After every code change
-Update these vault files before the session ends:
-- `CHANGELOG.md` — version bump + what changed
-- `BUGS.md` — mark fixed, add new bugs found
-- `HANDOFF.md` — current version + next session focus
-- `PROJECT_CONTEXT.md` — version number
 
-## Key helpers (do not reinvent)
-- `esc(value)` — XSS-safe HTML escaping. Use on every `innerHTML` write with user data.
-- `cleanInputValue(id, kind)` — sanitise + enforce length limits. Kinds: `short`, `name`, `email`, `phone`, `postcode`, `unit`, `address`, `description`, `notes`.
-- `INPUT_LIMITS` — all max lengths. Add new kinds here, never hardcode lengths.
-- `validateEmail(email)` — structural + typo domain check. Returns error string or null.
-- `gbToISO(dateStr)` — converts `dd/mm/yyyy` → `yyyy-mm-dd` for Supabase.
-- `money(n)` / `moneyCompact(n)` — always use for currency display, never format manually.
+Before the session ends, update:
+
+- `CHANGELOG.md` — version bump and what changed
+- `BUGS.md` — mark fixed bugs, add newly found bugs
+- `HANDOFF.md` — current version and next session focus
+- `PROJECT_CONTEXT.md` — version number
