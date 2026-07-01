@@ -1990,7 +1990,7 @@ window.addEventListener('DOMContentLoaded',function(){
       <div class="client-menu" id="client-menu">
         <div class="client-menu-item" onclick="openClientEditor()">Add New Client</div>
         <div class="client-menu-item" onclick="enterClientSelectMode()">Select / Manage</div>
-        <div class="client-menu-item" onclick="setClientFilter('Archived');closeClientMenu()">View Archived</div>
+        <div class="client-menu-item" id="cl-menu-archive-toggle" onclick="toggleClientArchiveView()">View Archived</div>
       </div>
     </div>
   </div>
@@ -4957,6 +4957,11 @@ function closeClientMenu(){
   document.getElementById('client-menu')?.classList.remove('open');
 }
 
+function toggleClientArchiveView(){
+  setClientFilter(clientFilter==='Archived'?'Active':'Archived');
+  closeClientMenu();
+}
+
 document.addEventListener('click',function(e){
   const menu=document.getElementById('client-menu');
   if(menu?.classList.contains('open')&&!e.target.closest('.client-plus-wrap')) closeClientMenu();
@@ -5080,6 +5085,8 @@ function setClientFilter(f){
   clientFilter=f;
   closeClientMenu();
   document.querySelectorAll('.cl-filter').forEach(el=>el.classList.toggle('on',el.dataset.cf===f));
+  const tog=document.getElementById('cl-menu-archive-toggle');
+  if(tog) tog.textContent=f==='Archived'?'View Active Clients':'View Archived';
   renderClientList();
 }
 
