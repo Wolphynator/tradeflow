@@ -8782,10 +8782,17 @@ function renderClientViewer(doc){
                     ? `<div style="margin:16px;padding:12px 16px;background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;font-size:13px;color:#92400e;text-align:center">&#128274; This legacy link is read-only. Ask the contractor for a new secure link to respond.</div>`
                   : !isInv&&doc.status==='Converted'
                     ? ``
-                    : `<div class="vw-resp-btns">${isInv
-                      ? `<button class="vw-resp-accept" onclick="vwStartVerifiedAction('accept')">&#10003; Sign &amp; Accept</button><button class="vw-resp-query" onclick="vwStartVerifiedAction('query')">? Query</button>`
-                      : `<button class="vw-resp-accept" onclick="vwStartVerifiedAction('accept')">&#10003; Accept</button><button class="vw-resp-decline" onclick="vwStartVerifiedAction('decline')">&#10007; Decline</button><button class="vw-resp-query" onclick="vwStartVerifiedAction('query')">? Query</button>`
-                    }</div>`
+                    : `<div id="vw-identity-gate" style="margin:16px">
+                        <div class="vw-agreement" style="margin:0 0 12px">
+                          <div class="vw-agreement-title">Verify Your Identity</div>
+                          <div class="vw-agreement-text">Before responding, let’s verify that you’re the intended recipient.</div>
+                        </div>
+                        <button class="vw-sig-submit" style="width:100%" onclick="vwShowSection('email-verify')">Verify Identity</button>
+                      </div>
+                      <div class="vw-resp-btns" id="vw-verified-actions" style="display:none">${isInv
+                        ? `<button class="vw-resp-accept" onclick="vwShowSection('accept')">&#10003; Sign &amp; Accept</button><button class="vw-resp-query" onclick="vwShowSection('query')">? Query</button>`
+                        : `<button class="vw-resp-accept" onclick="vwShowSection('accept')">&#10003; Accept</button><button class="vw-resp-decline" onclick="vwShowSection('decline')">&#10007; Decline</button><button class="vw-resp-query" onclick="vwShowSection('query')">? Query</button>`
+                      }</div>`
         }
         ${!doc.signedAt&&!doc.declinedAt&&!isConvertedInv&&doc.status!=='Converted'?`
         <div id="vw-email-verify-panel" class="vw-sub-panel">
@@ -9007,7 +9014,7 @@ function vwStartVerifiedAction(action){
   _otpPendingAction=action||'accept';
   if(_otpVerified&&_otpVerificationToken){vwShowSection(_otpPendingAction);return;}
   const purpose=document.getElementById('vw-otp-purpose');
-  if(purpose) purpose.textContent='We’ll send a verification code to the email address on this document before '+(_otpPendingAction==='accept'?'signing':_otpPendingAction==='decline'?'declining':'sending a query')+'.';
+  if(purpose) purpose.textContent='We’ll send a verification code to the email address on this document.';
   vwShowSection('email-verify');
 }
 
@@ -9066,8 +9073,11 @@ async function vwVerifyOtp(){
     }
     _otpVerified=true;
     _otpVerificationToken=data.verification_token;
-    vwShowSection(_otpPendingAction);
-    document.getElementById(_otpPendingAction==='accept'?'vw-sig-input':_otpPendingAction==='decline'?'vw-decline-comment':'vw-query-msg')?.focus();
+    const gate=document.getElementById('vw-identity-gate');
+    const actions=document.getElementById('vw-verified-actions');
+    if(gate) gate.style.display='none';
+    if(actions) actions.style.display='flex';
+    vwShowSection(null);
   }catch(e){
     if(errEl){errEl.textContent='Network error. Please try again.';errEl.style.display='block';}
     if(btn){btn.disabled=false;btn.textContent='Verify';}
