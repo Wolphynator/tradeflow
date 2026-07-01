@@ -319,7 +319,7 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
 .inv-filter.overdue.active{background:var(--danger-light);border-color:var(--danger);color:var(--danger)}
 
 /*  Clients  */
-.client-card{background:var(--surface);border-radius:14px;border:1px solid var(--border);padding:14px;margin-bottom:10px;cursor:pointer}
+.client-card{background:var(--surface);border-radius:14px;border:1px solid var(--border);padding:14px;margin-bottom:10px;cursor:pointer;position:relative}
 .client-card:active{background:var(--bg)}
 .cc-top{display:flex;align-items:center;gap:12px;margin-bottom:6px}
 .cc-av{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex-shrink:0}
@@ -597,6 +597,8 @@ textarea.finput{resize:none;min-height:75px;line-height:1.5}
 .cl-filter-bar::-webkit-scrollbar{display:none}
 .cl-filter{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:13px;font-weight:500;white-space:nowrap;color:var(--muted);flex-shrink:0;cursor:pointer;transition:all .15s}
 .cl-filter.on{background:var(--brand);border-color:var(--brand);color:white;font-weight:700}
+.cl-rank{position:absolute;top:10px;right:12px;font-size:11px;font-weight:800;color:var(--muted);background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:2px 8px;line-height:1.4}
+.cl-rank.top3{color:#b45309;background:#fef3dc;border-color:#fde68a}
 .cl-stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
 .cl-stat{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px;text-align:center}
 .cl-stat-val{font-size:19px;font-weight:700}
@@ -2035,6 +2037,7 @@ window.addEventListener('DOMContentLoaded',function(){
       <div class="cl-filter on" data-cf="Active" onclick="setClientFilter('Active')">Active</div>
       <div class="cl-filter" data-cf="All" onclick="setClientFilter('All')">All</div>
       <div class="cl-filter" data-cf="Archived" onclick="setClientFilter('Archived')">Archived</div>
+      <div class="cl-filter" data-cf="Top" onclick="setClientFilter('Top')">Top Clients</div>
     </div>
     <input id="client-search" class="finput" placeholder="Search by name, email, phone..." style="margin-bottom:14px" oninput="renderClientList()">
     <div id="client-list"></div>
@@ -5075,28 +5078,32 @@ function renderClientList(){
   if(!list) return;
   const avColors=['#e8f4ed','#eff6ff','#fef2f2','#f0f0fe','#fef3dc','#f0fdf4','#fff1f2','#f5f3ff'];
   const avTexts=['var(--brand)','#1d4ed8','#dc2626','#5b45c7','#b45309','#15803d','#be185d','#6d28d9'];
-  const filtered=savedClients.map((c,i)=>({c,i})).filter(({c})=>{
-    if(clientFilter==='Active' && c.archived) return false;
-    if(clientFilter==='Archived' && !c.archived) return false;
+  const isTop=clientFilter==='Top';
+  let filtered=savedClients.map((c,i)=>({c,i})).filter(({c})=>{
+    if(isTop && c.archived) return false;
+    if(!isTop && clientFilter==='Active' && c.archived) return false;
+    if(!isTop && clientFilter==='Archived' && !c.archived) return false;
     if(q && !`${c.name} ${c.type} ${c.email} ${c.mobile} ${c.home_phone} ${clientLocation(c)}`.toLowerCase().includes(q)) return false;
     return true;
   });
+  if(isTop) filtered=filtered.map(({c,i})=>({c,i,_rev:clientMetrics(c).revenue})).sort((a,b)=>b._rev-a._rev);
   if(!filtered.length){
     list.innerHTML='<div class="card" style="padding:20px;text-align:center;color:var(--muted)">'+
-      (clientFilter==='Archived'?'No archived customers.':q?'No customers match your search.':'No customers yet. Tap + to add one.')+'</div>';
+      (clientFilter==='Archived'?'No archived customers.':isTop?'No clients with revenue yet.':q?'No customers match your search.':'No customers yet. Tap + to add one.')+'</div>';
     return;
   }
   const statusColor=s=>s==='Overdue'?'var(--danger)':(s==='Paid'||s==='Active'?'var(--success)':'var(--muted)');
-  list.innerHTML=filtered.map(({c,i})=>{
+  list.innerHTML=filtered.map(({c,i},rank)=>{
     const metrics=clientMetrics(c);
     const ci=i%avColors.length;
     const archived=c.archived?'<span class="cl-archived-tag">Archived</span>':'';
     const checkHtml=clientSelectMode?'<div class="cl-check" onclick="event.stopPropagation();toggleClientSelect('+i+')">'+(clientSelectedSet.has(i)?'✓':'')+'</div>':'';
     const addrLine=clientAddrLine(c);
     const cityPc=clientCityPostcode(c);
+    const rankBadge=isTop?'<div class="cl-rank'+(rank<3?' top3':'')+'">'+(['🥇','🥈','🥉'][rank]||('#'+(rank+1)))+'</div>':'';
     return '<div class="client-card'+(clientSelectMode?' cl-selectable':'')+(c.archived?' cl-archived-card':'')+(clientSelectedSet.has(i)?' cl-checked':'')+'" '+
       (clientSelectMode?'onclick="toggleClientSelect('+i+')"':'onclick="openClientDetail('+i+')"')+'>'+
-      checkHtml+
+      checkHtml+rankBadge+
       '<div class="cc-top"><div class="cc-av" style="background:'+avColors[ci]+';color:'+avTexts[ci]+'">'+initials(c.name)+'</div>'+
       '<div style="flex:1;min-width:0"><div class="cc-name">'+esc(c.name)+'</div>'+
       '<div class="cc-loc">'+esc(cityPc||'No address saved')+'</div>'+
