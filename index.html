@@ -4957,6 +4957,11 @@ function closeClientMenu(){
   document.getElementById('client-menu')?.classList.remove('open');
 }
 
+document.addEventListener('click',function(e){
+  const menu=document.getElementById('client-menu');
+  if(menu?.classList.contains('open')&&!e.target.closest('.client-plus-wrap')) closeClientMenu();
+});
+
 function openClientEditor(){
   closeClientMenu();
   editingClientIndex=-1;
@@ -8153,7 +8158,9 @@ function transformShareViewData(data){
   const terms=doc.terms||'';
   const dateText=dateRaw?new Date(dateRaw).toLocaleDateString('en-GB'):'';
   const dueDate=isInv?calculatedInvoiceDueDate(terms,dateText):'';
-  const validUntil=!isInv?calculatedEstimateValidUntil(terms||defaultEstimateTerms(),dateText):'';
+  const validUntil=!isInv
+    ? (doc.valid_until?new Date(doc.valid_until+'T00:00:00').toLocaleDateString('en-GB'):calculatedEstimateValidUntil(terms||defaultEstimateTerms(),dateText))
+    :'';
   return{
     type,id:doc.number,client:doc.client_name,
     clientAddr:(doc.client_address||'').replace(/\n/g,'<br>'),
@@ -8718,6 +8725,11 @@ function renderClientViewer(doc){
   const root=document.getElementById('viewer-root');
   const isInv=doc.type==='invoice';
   const isConvertedInv=isInv&&typeof doc.id==='string'&&doc.id.includes('(ref ');
+  const expiryISO=!isInv?parseDateGB(doc.validUntil):null;
+  const nowDate=new Date();
+  const todayISO=nowDate.getFullYear()+'-'+String(nowDate.getMonth()+1).padStart(2,'0')+'-'+String(nowDate.getDate()).padStart(2,'0');
+  const isExpiredEstimate=!isInv&&/^\d{4}-\d{2}-\d{2}$/.test(expiryISO||'')&&expiryISO<todayISO;
+  _viewerExpiredQueryOnly=isExpiredEstimate;
   const label=isInv?'Invoice':'Estimate';
   const linesHtml=isInv?renderViewerInvoiceLines(doc):renderViewerEstimateLines(doc);
   const agreementText=isInv
@@ -8811,6 +8823,14 @@ function renderClientViewer(doc){
                     ? `<div style="margin:16px;padding:12px 16px;background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;font-size:13px;color:#92400e;text-align:center">&#128274; This legacy link is read-only. Ask the contractor for a new secure link to respond.</div>`
                   : !isInv&&doc.status==='Converted'
                     ? ``
+                    : isExpiredEstimate
+                      ? `<div id="vw-expired-estimate" style="margin:16px">
+                          <div style="padding:14px 16px;background:#fff7ed;border:1px solid #fdba74;border-radius:10px;color:#9a3412">
+                            <div style="font-size:13px;font-weight:800;margin-bottom:5px">Estimate Expired</div>
+                            <div style="font-size:13px;line-height:1.5">This estimate expired on ${esc(doc.validUntil)} and can no longer be accepted. Please contact the sender if you would like an updated estimate.</div>
+                          </div>
+                          <button class="vw-resp-query" style="width:100%;margin-top:10px" onclick="vwStartVerifiedAction('query')">? Send a Query</button>
+                        </div>`
                     : `<div id="vw-identity-gate" style="margin:16px">
                         <div class="vw-agreement" style="margin:0 0 12px">
                           <div class="vw-agreement-title">Verify Your Identity</div>
@@ -9036,6 +9056,7 @@ let _otpPendingAction='accept';
 let _otpSending=false;
 let _otpResendTimer=null;
 let _otpResendRemaining=0;
+let _viewerExpiredQueryOnly=false;
 
 function vwStartAccept(){
   vwStartVerifiedAction('accept');
@@ -9051,9 +9072,12 @@ function vwBeginVerification(){
 function vwStartVerifiedAction(action){
   _otpPendingAction=action||'accept';
   if(_otpVerified&&_otpVerificationToken){vwShowSection(_otpPendingAction);return;}
+  const expiredNotice=document.getElementById('vw-expired-estimate');
+  if(expiredNotice) expiredNotice.style.display='none';
   const purpose=document.getElementById('vw-otp-purpose');
-  if(purpose) purpose.textContent="To protect your security and prevent unauthorised signatures, we'll send a one-time verification code to the email address associated with this document.";
+  if(purpose) purpose.textContent='Please wait while we send a one-time code to the email address associated with this document.';
   vwShowSection('email-verify');
+  vwSendOtp();
 }
 
 async function vwFunctionErrorData(data,error){
@@ -9123,6 +9147,11 @@ async function vwVerifyOtp(){
     }
     _otpVerified=true;
     _otpVerificationToken=data.verification_token;
+    if(_viewerExpiredQueryOnly){
+      vwShowSection('query');
+      document.getElementById('vw-query-msg')?.focus();
+      return;
+    }
     const gate=document.getElementById('vw-identity-gate');
     const actions=document.getElementById('vw-verified-actions');
     if(gate) gate.style.display='none';
@@ -9172,6 +9201,8 @@ function vwCancelVerification(){
   if(codeInput) codeInput.value='';
   const gate=document.getElementById('vw-identity-gate');
   if(gate&&!_otpVerified) gate.style.display='block';
+  const expiredNotice=document.getElementById('vw-expired-estimate');
+  if(expiredNotice&&!_otpVerified) expiredNotice.style.display='block';
   vwShowSection(null);
 }
 
